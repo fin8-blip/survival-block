@@ -52,8 +52,8 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 ### Phase 5: Publikasi GitHub Pages
 - [x] Inisialisasi git dan branch `main`
 - [x] Repository GitHub publik tersedia: `fin8-blip/survival-block`
-- [ ] Aktifkan GitHub Pages (CLI `gh api` atau manual Web UI — perintah disertakan di laporan)
-- [ ] Tes live demo dan verifikasi zero-cache
+- [x] Aktifkan GitHub Pages (CLI `gh api` atau manual Web UI — perintah disertakan di laporan)
+- [x] Tes live demo dan verifikasi zero-cache
 
 ---
 
@@ -67,7 +67,8 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 | **T-03** | Modul Input Username & Leaderboard Top 10 | Phase 2 | `DONE` | AI | LocalStorage CRUD & UI tabel |
 | **T-04** | Logika Pergerakan, Tambang, Bangun & Tabrakan | Phase 3 | `DONE` | AI | 3 pemain lokal, fisika, inventori |
 | **T-05** | Efek Suara Synth Web Audio API & Screen Shake | Phase 4 | `DONE` | AI | Audio sintetis, HUD, hotbar |
-| **T-06** | Deployment GitHub Pages via GitHub CLI (`gh`) | Phase 5 | `DONE` | AI | Kode dipush ke `origin/main`; aktivasi Pages via `gh api` / Web UI (lihat laporan) |
+| **T-06** | Deployment GitHub Pages via GitHub CLI (`gh`) | Phase 5 | `DONE` | AI | Kode dipush ke `origin/main`; Pages aktif di https://fin8-blip.github.io/survival-block/ |
+| **T-07** | Perbaikan bug fatal "game tidak bisa dimulai" | Phase 3 | `DONE` | AI | `new Array(62.5)` RangeError, inisialisasi grid dunia, satu game loop, koordinat mouse vs kamera, CSS HUD/kontrol mobile |
 
 *Status: `TODO` | `IN-PROGRESS` | `DONE`*
 
@@ -79,6 +80,8 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 | :--- | :--- | :--- | :--- | :--- |
 | **v0.3.0** | 2026-10-24 | AI | Membuat `index.html` lengkap: Survival Block 2D (Minecraft-like), 3 pemain lokal, username, leaderboard LocalStorage, Web Audio API, inventori, tambang/bangun blok, HUD, screen shake | `8666244` |
 | **v0.3.1** | 2026-10-24 | AI | Menambahkan kontrol layar sentuh (D-pad + tombol tambang/tempat/lompat) untuk mobile, dan persiapan deployment GitHub Pages | `c9c3cc0` |
+| **v0.3.2** | 2026-10-31 | AI | GitHub Pages aktif (branch `main`, root) dan live di https://fin8-blip.github.io/survival-block/ | - |
+| **v0.4.0** | 2026-10-31 | AI | Fix fatal: `new Array(62.5)` RangeError pada `initWorld`, grid dunia diinisialisasi sebelum generate pohon, ukuran dunia 2048x540, satu game loop (`ensureLoop`), koordinat mouse memakai kamera, kurung `ctx.save/restore`, tambang/tempat tidak lagi diblokir cooldown ganda, kecepatan pemain di-clamp, CSS HUD/hotbar/inventori/kontrol mobile, kolom waktu leaderboard | - |
 | **v0.2.2** | 2026-10-24 | AI | Menambahkan panduan alur integrasi khusus Google AI Studio & penegasan repo wajib Public | `07475fb` |
 | **v0.2.1** | 2026-10-24 | AI | Menambahkan panduan detail aktivasi GitHub Pages (CLI gh api & Web UI visual) serta troubleshooting | `3aaf671` |
 | **v0.2.0** | 2026-10-24 | AI | Konfigurasi ulang ke Single Model AI untuk siswa, modularisasi 8 blok kode, dan penyesuaian matriks tugas | `2954bb0` |

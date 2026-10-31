@@ -25,6 +25,38 @@
   button.secondary { background: #4a4a6a; }
   button.secondary:hover { background: #6a6a8a; }
   .hint { margin-top: 14px; font-size: 13px; color: #aaa; line-height: 1.5; }
+  #hud { position: absolute; top: 10px; left: 10px; z-index: 20; display: flex; flex-direction: column; gap: 6px; width: min(320px, 60vw); pointer-events: none; }
+  .bar-row { display: flex; align-items: center; gap: 8px; }
+  .stat-label { font-size: 12px; color: #fff; text-shadow: 1px 1px 2px #000; white-space: nowrap; }
+  .stat-bar { flex: 1; height: 14px; background: rgba(0,0,0,0.55); border: 2px solid #000; border-radius: 7px; overflow: hidden; }
+  .stat-fill { height: 100%; width: 100%; transition: width 0.2s; }
+  .health-fill { background: linear-gradient(90deg, #e94560, #ff7b8a); }
+  .hunger-fill { background: linear-gradient(90deg, #f6a623, #ffcf70); }
+  #hotbar { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 22; }
+  .slot { position: relative; width: 46px; height: 46px; display: flex; align-items: center; justify-content: center; font-size: 22px; background: rgba(0,0,0,0.55); border: 2px solid #444; border-radius: 8px; cursor: pointer; }
+  .slot.active { border-color: #e94560; box-shadow: 0 0 10px rgba(233,69,96,0.9); }
+  .slot-count { position: absolute; right: 3px; bottom: 1px; font-size: 11px; color: #fff; text-shadow: 1px 1px #000; }
+  .inv-btn { position: absolute; right: 14px; bottom: 70px; width: auto; margin: 0; padding: 10px 14px; font-size: 13px; z-index: 22; }
+  #toast { position: absolute; top: 22%; left: 50%; transform: translateX(-50%); padding: 10px 18px; background: rgba(0,0,0,0.85); border: 2px solid #e94560; border-radius: 8px; color: #fff; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 60; }
+  #toast.show { opacity: 1; }
+  #inventory-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; width: 340px; max-width: 92vw; padding: 22px; background: rgba(30,30,50,0.97); border: 3px solid #e94560; border-radius: 14px; color: #fff; z-index: 70; }
+  #inventory-panel.active { display: block; }
+  #inv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
+  .inv-item { position: relative; height: 56px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: rgba(0,0,0,0.5); border: 2px solid #444; border-radius: 8px; cursor: pointer; }
+  .inv-item.selected { border-color: #e94560; }
+  .inv-qty { position: absolute; right: 4px; bottom: 2px; font-size: 11px; }
+  .inv-close { background: #4a4a6a; }
+  #leaderboard-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
+  #leaderboard-table th, #leaderboard-table td { padding: 5px 6px; border-bottom: 1px solid rgba(255,255,255,0.12); text-align: left; }
+  #leaderboard-table th { color: #e94560; text-transform: uppercase; font-size: 11px; }
+  #mobile-controls { position: absolute; left: 0; right: 0; bottom: 0; display: flex; align-items: flex-end; justify-content: space-between; padding: 14px; z-index: 25; pointer-events: none; }
+  .d-pad { display: grid; grid-template-columns: repeat(3, 50px); grid-template-rows: repeat(3, 50px); gap: 4px; pointer-events: auto; }
+  .dp-btn { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); border: 2px solid rgba(255,255,255,0.35); border-radius: 10px; color: #fff; font-size: 18px; user-select: none; touch-action: none; }
+  .dp-up { grid-column: 2; grid-row: 1; } .dp-left { grid-column: 1; grid-row: 2; } .dp-right { grid-column: 3; grid-row: 2; } .dp-down { grid-column: 2; grid-row: 3; }
+  .action-btns { display: flex; gap: 10px; pointer-events: auto; }
+  .act-btn { width: 58px; height: 58px; display: flex; align-items: center; justify-content: center; background: rgba(233,69,96,0.8); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; font-size: 24px; color: #fff; user-select: none; touch-action: none; }
+  @media (hover: hover) and (pointer: fine) { #mobile-controls { display: none; } }
+  @media (hover: none) { #hotbar { bottom: 100px; } .inv-btn { bottom: 150px; } }
 </style>
 </head>
 <body>
@@ -130,9 +162,9 @@ const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
 const TILE = 32;
 const COLS = Math.floor(canvas.width / TILE);
-const ROWS = Math.floor(canvas.height / TILE);
-const GAME_WIDTH = 2000;
-const GAME_HEIGHT = 400;
+const GAME_WIDTH = 2048;
+const GAME_HEIGHT = 540;
+const ROWS = Math.floor(GAME_HEIGHT / TILE);
 const STATE = { MENU:'MENU', USERNAME:'USERNAME', PLAYING:'PLAYING', PAUSED:'PAUSED', GAMEOVER:'GAMEOVER', LEADERBOARD:'LEADERBOARD' };
 let gameState = STATE.MENU;
 let lastTime = 0;
@@ -178,7 +210,7 @@ window.addEventListener('keyup',e=>{
   keys[e.code]=false;
   keys[e.key.toLowerCase()]=false;
 });
-window.addEventListener('mousedown',e=>{ mouse.down=true; getMouseWorld(e); });
+window.addEventListener('mousedown',e=>{ mouse.down=(e.target===canvas&&e.button===0); getMouseWorld(e); });
 window.addEventListener('mouseup',e=>{ mouse.down=false; });
 window.addEventListener('mousemove',e=>{ getMouseWorld(e); });
 function getMouseWorld(e){
@@ -187,10 +219,8 @@ function getMouseWorld(e){
   const scaleY=canvas.height/rect.height;
   mouse.x=(e.clientX-rect.left)*scaleX;
   mouse.y=(e.clientY-rect.top)*scaleY;
-  const camX=players[0]?players[0].x-canvas.width/2:0;
-  const camY=players[0]?players[0].y-canvas.height/2:0;
-  mouse.worldX=camX+mouse.x;
-  mouse.worldY=camY+mouse.y;
+  mouse.worldX=camera.x+mouse.x;
+  mouse.worldY=camera.y+mouse.y;
 }
 canvas.addEventListener('touchstart',e=>{
   e.preventDefault();
@@ -200,10 +230,8 @@ canvas.addEventListener('touchstart',e=>{
   const scaleY=canvas.height/rect.height;
   mouse.x=(touch.clientX-rect.left)*scaleX;
   mouse.y=(touch.clientY-rect.top)*scaleY;
-  const camX=players[0]?players[0].x-canvas.width/2:0;
-  const camY=players[0]?players[0].y-canvas.height/2:0;
-  mouse.worldX=camX+mouse.x;
-  mouse.worldY=camY+mouse.y;
+  mouse.worldX=camera.x+mouse.x;
+  mouse.worldY=camera.y+mouse.y;
   mouse.down=true;
 },{passive:false});
 window.addEventListener('touchend',e=>{ mouse.down=false; });
@@ -238,10 +266,10 @@ const players=[];
 let camera={x:0,y:0};
 let world=[];
 function initWorld(){
-  world=new Array(GAME_WIDTH/TILE);
+  world=new Array(Math.ceil(GAME_WIDTH/TILE));
+  for(let cx=0;cx<world.length;cx++) world[cx]=new Array(ROWS).fill(BLOCK.AIR);
   for(let cx=0;cx<world.length;cx++){
-    world[cx]=new Array(ROWS);
-    const surface=Math.floor(20+6*Math.sin(cx*0.02)+3*Math.sin(cx*0.07));
+    const surface=Math.floor(10+2*Math.sin(cx*0.05)+Math.sin(cx*0.13));
     for(let r=0;r<ROWS;r++){
       const worldY=r*TILE;
       if(worldY<surface*TILE-TILE) world[cx][r]=BLOCK.AIR;
@@ -276,6 +304,8 @@ function updatePlayerPhysics(p){
   if(p.dead) return;
   if(keys[p.controls.left]) p.vx-=p.speed;
   if(keys[p.controls.right]) p.vx+=p.speed;
+  if(p.vx>p.maxSpeed) p.vx=p.maxSpeed;
+  if(p.vx<-p.maxSpeed) p.vx=-p.maxSpeed;
   if(keys[p.controls.jump]) p.jump();
   p.vy+=p.gravity;
   if(p.vy>12) p.vy=12;
@@ -340,7 +370,7 @@ function saveLeaderboard(arr){ try{ localStorage.setItem(LS_BOARD,JSON.stringify
 function addLeaderboardEntry(username,score,timeSec){
   const board=getLeaderboard();
   const now=new Date();
-  const entry={ id:'run_'+Date.now(), username:sanitize(username), score:score, timestamp:now.getTime(), date:now.toLocaleDateString('id-ID')+' '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) };
+  const entry={ id:'run_'+Date.now(), username:sanitize(username), score:score, time:formatTime(timeSec), timestamp:now.getTime(), date:now.toLocaleDateString('id-ID')+' '+now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}) };
   board.push(entry);
   board.sort((a,b)=>b.score-a.score);
   saveLeaderboard(board.slice(0,10));
@@ -352,7 +382,7 @@ function renderLeaderboard(){
   tbody.innerHTML='';
   board.slice(0,10).forEach((e,i)=>{
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${i+1}</td><td>${e.username}</td><td>${e.score}</td><td>${e.score} pt</td><td>${e.date}</td>`;
+    tr.innerHTML=`<td>${i+1}</td><td>${e.username}</td><td>${e.score}</td><td>${e.time||'-'}</td><td>${e.date}</td>`;
     tbody.appendChild(tr);
   });
 }
@@ -454,8 +484,7 @@ function startGame(){
   document.getElementById('overlayLeaderboard').classList.remove('active');
   document.getElementById('inventory-panel').classList.remove('active');
   sfxStart();
-  lastTime=performance.now();
-  requestAnimationFrame(loop);
+  ensureLoop();
 }
 function showUsernameOverlay(){
   const el=document.getElementById('overlayUsername');
@@ -473,8 +502,19 @@ function returnToMenu(){
   document.getElementById('overlayLeaderboard').classList.remove('active');
   document.getElementById('inventory-panel').classList.remove('active');
   cancelAnimationFrame(animFrame);
+  loopRunning=false;
+  lastTime=0;
+  accumulator=0;
 }
 let animFrame;
+let loopRunning=false;
+function ensureLoop(){
+  if(loopRunning) return;
+  loopRunning=true;
+  lastTime=performance.now();
+  accumulator=0;
+  animFrame=requestAnimationFrame(loop);
+}
 function loop(now){
   if(!lastTime) lastTime=now;
   const dt=Math.min((now-lastTime)/1000,0.1);
@@ -519,6 +559,7 @@ function update(dt){
 function render(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   if(gameState!==STATE.PLAYING&&gameState!==STATE.PAUSED) return;
+  ctx.save();
   drawScreenShake();
   drawWorld();
   players.forEach(p=>drawPlayer(p));
@@ -552,14 +593,12 @@ document.getElementById('btnSetUsername').addEventListener('click',()=>{
   gameState=STATE.PLAYING;
   document.getElementById('overlayMenu').classList.remove('active');
   sfxStart();
-  lastTime=performance.now();
-  requestAnimationFrame(loop);
+  ensureLoop();
 });
 document.getElementById('btnResume').addEventListener('click',()=>{
   gameState=STATE.PLAYING;
   document.getElementById('overlayPause').classList.remove('active');
   lastTime=performance.now();
-  requestAnimationFrame(loop);
 });
 document.getElementById('btnMenu').addEventListener('click',returnToMenu);
 document.getElementById('btnGoMenu').addEventListener('click',returnToMenu);
@@ -576,22 +615,12 @@ document.getElementById('invBtn').addEventListener('click',()=>{
 document.getElementById('invClose').addEventListener('click',()=>{
   document.getElementById('inventory-panel').classList.remove('active');
 });
-canvas.addEventListener('click',e=>{
+canvas.addEventListener('mousedown',e=>{
   if(gameState!==STATE.PLAYING) return;
+  if(e.button!==2) return;
+  e.preventDefault();
   getMouseWorld(e);
-  const p=players[0];
-  if(!p||p.dead) return;
-  const now=Date.now();
-  if(e.button===0){
-    if(now-p.lastMine<400) return;
-    p.lastMine=now;
-    handleMinePlace('mine');
-  } else if(e.button===2){
-    e.preventDefault();
-    if(now-p.lastPlace<300) return;
-    p.lastPlace=now;
-    handleMinePlace('place');
-  }
+  handleMinePlace('place');
 });
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
 
@@ -637,19 +666,10 @@ actBtns.forEach(btn=>{
   const run = ()=>{
     const p = players[0];
     if(!p || p.dead) return;
-    const now = Date.now();
     setMouseToPlayer();
-    if(act === 'mine'){
-      if(now - p.lastMine < 400) return;
-      p.lastMine = now;
-      handleMinePlace('mine');
-    } else if(act === 'place'){
-      if(now - p.lastPlace < 300) return;
-      p.lastPlace = now;
-      handleMinePlace('place');
-    } else if(act === 'jump'){
-      p.jump();
-    }
+    if(act === 'mine') handleMinePlace('mine');
+    else if(act === 'place') handleMinePlace('place');
+    else if(act === 'jump') p.jump();
   };
   btn.addEventListener('touchstart', e=>{ e.preventDefault(); run(); }, {passive:false});
   btn.addEventListener('mousedown', e=>{ e.preventDefault(); run(); });
@@ -660,6 +680,8 @@ function __applyVirtualMove(){
   if(!p || p.dead) return;
   if(virtualLeft) p.vx -= p.speed;
   if(virtualRight) p.vx += p.speed;
+  if(p.vx>p.maxSpeed) p.vx=p.maxSpeed;
+  if(p.vx<-p.maxSpeed) p.vx=-p.maxSpeed;
 }
 
 document.getElementById('overlayMenu').classList.add('active');
