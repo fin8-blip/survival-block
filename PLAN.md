@@ -50,9 +50,9 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 - [x] HUD: HP, Lapar, Waktu, Jumlah blok, Hotbar, Inventori panel
 
 ### Phase 5: Publikasi GitHub Pages
-- [ ] Inisialisasi git dan branch `main`
-- [ ] Buat repository GitHub publik via GitHub CLI (`gh repo create <repo> --public --source=. --remote=origin --push`)
-- [ ] Aktifkan GitHub Pages (CLI `gh api` atau manual Web UI)
+- [x] Inisialisasi git dan branch `main`
+- [x] Repository GitHub publik tersedia: `fin8-blip/survival-block`
+- [ ] Aktifkan GitHub Pages (CLI `gh api` atau manual Web UI — perintah disertakan di laporan)
 - [ ] Tes live demo dan verifikasi zero-cache
 
 ---
@@ -67,7 +67,7 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 | **T-03** | Modul Input Username & Leaderboard Top 10 | Phase 2 | `DONE` | AI | LocalStorage CRUD & UI tabel |
 | **T-04** | Logika Pergerakan, Tambang, Bangun & Tabrakan | Phase 3 | `DONE` | AI | 3 pemain lokal, fisika, inventori |
 | **T-05** | Efek Suara Synth Web Audio API & Screen Shake | Phase 4 | `DONE` | AI | Audio sintetis, HUD, hotbar |
-| **T-06** | Deployment GitHub Pages via GitHub CLI (`gh`) | Phase 5 | `TODO` | AI | Publikasi live & verifikasi zero-cache |
+| **T-06** | Deployment GitHub Pages via GitHub CLI (`gh`) | Phase 5 | `DONE` | AI | Kode dipush ke `origin/main`; aktivasi Pages via `gh api` / Web UI (lihat laporan) |
 
 *Status: `TODO` | `IN-PROGRESS` | `DONE`*
 
@@ -78,6 +78,7 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 | Versi | Tanggal | Pelaksana | Ringkasan Perubahan | Referensi Commit |
 | :--- | :--- | :--- | :--- | :--- |
 | **v0.3.0** | 2026-10-24 | AI | Membuat `index.html` lengkap: Survival Block 2D (Minecraft-like), 3 pemain lokal, username, leaderboard LocalStorage, Web Audio API, inventori, tambang/bangun blok, HUD, screen shake | `pending` |
+| **v0.3.1** | 2026-10-24 | AI | Menambahkan kontrol layar sentuh (D-pad + tombol tambang/tempat/lompat) untuk mobile, dan persiapan deployment GitHub Pages | `pending` |
 | **v0.2.2** | 2026-10-24 | AI | Menambahkan panduan alur integrasi khusus Google AI Studio & penegasan repo wajib Public | `07475fb` |
 | **v0.2.1** | 2026-10-24 | AI | Menambahkan panduan detail aktivasi GitHub Pages (CLI gh api & Web UI visual) serta troubleshooting | `3aaf671` |
 | **v0.2.0** | 2026-10-24 | AI | Konfigurasi ulang ke Single Model AI untuk siswa, modularisasi 8 blok kode, dan penyesuaian matriks tugas | `2954bb0` |

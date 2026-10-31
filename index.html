@@ -496,6 +496,7 @@ function update(dt){
     if(camera.y<0) camera.y=0;
     if(camera.y>GAME_HEIGHT-canvas.height) camera.y=GAME_HEIGHT-canvas.height;
   }
+  __applyVirtualMove();
   players.forEach(p=>updatePlayerPhysics(p));
   if(mouse.down) handleMinePlace('mine');
   if(keys['e']&&!window.__invDebounce){
@@ -593,6 +594,74 @@ canvas.addEventListener('click',e=>{
   }
 });
 canvas.addEventListener('contextmenu',e=>e.preventDefault());
+
+/* Mobile virtual controls (D-pad + tombol aksi) */
+const dpBtns = document.querySelectorAll('.dp-btn');
+const actBtns = document.querySelectorAll('.act-btn');
+let virtualLeft = false;
+let virtualRight = false;
+let __jumpDebounce = false;
+
+dpBtns.forEach(btn=>{
+  const dir = btn.dataset.dir;
+  const start = ()=>{
+    if(dir==='left') virtualLeft = true;
+    if(dir==='right') virtualRight = true;
+    if(dir==='up' && !__jumpDebounce){
+      __jumpDebounce = true;
+      const p = players[0];
+      if(p && !p.dead) p.jump();
+      setTimeout(()=>{ __jumpDebounce = false; }, 300);
+    }
+  };
+  const end = ()=>{
+    if(dir==='left') virtualLeft = false;
+    if(dir==='right') virtualRight = false;
+  };
+  btn.addEventListener('touchstart', e=>{ e.preventDefault(); start(); }, {passive:false});
+  btn.addEventListener('touchend', e=>{ e.preventDefault(); end(); });
+  btn.addEventListener('mousedown', e=>{ e.preventDefault(); start(); });
+  btn.addEventListener('mouseup', e=>{ e.preventDefault(); end(); });
+  btn.addEventListener('mouseleave', end);
+});
+
+function setMouseToPlayer(){
+  const p = players[0];
+  if(!p) return;
+  mouse.worldX = p.x + p.w/2 + (p.dir * 44);
+  mouse.worldY = p.y + p.h/2 - 8;
+}
+
+actBtns.forEach(btn=>{
+  const act = btn.dataset.act;
+  const run = ()=>{
+    const p = players[0];
+    if(!p || p.dead) return;
+    const now = Date.now();
+    setMouseToPlayer();
+    if(act === 'mine'){
+      if(now - p.lastMine < 400) return;
+      p.lastMine = now;
+      handleMinePlace('mine');
+    } else if(act === 'place'){
+      if(now - p.lastPlace < 300) return;
+      p.lastPlace = now;
+      handleMinePlace('place');
+    } else if(act === 'jump'){
+      p.jump();
+    }
+  };
+  btn.addEventListener('touchstart', e=>{ e.preventDefault(); run(); }, {passive:false});
+  btn.addEventListener('mousedown', e=>{ e.preventDefault(); run(); });
+});
+
+function __applyVirtualMove(){
+  const p = players[0];
+  if(!p || p.dead) return;
+  if(virtualLeft) p.vx -= p.speed;
+  if(virtualRight) p.vx += p.speed;
+}
+
 document.getElementById('overlayMenu').classList.add('active');
 renderLeaderboard();
 </script>
