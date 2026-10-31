@@ -43,6 +43,8 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 - [x] Dunia voxel 96x48x96 dengan terrain noise, pohon, ore arang & besi, bedrock
 - [x] Tambang blok (klik kiri) & pasang blok (klik kanan), raycast DDA, inventori 9 slot, blok highlight
 - [x] Fisika AABB per-sumbu: gravitasi, tabrakan, step, fall damage, batas dunia
+- [x] Resource: air (laut/danau + berenang), pasir pantai, kayu dari menebang pohon
+- [x] Tangan karakter first-person memegang blok terpilih (animasi ayun & bob)
 
 ### Phase 4: Efek Suara & Visual Juice
 - [x] Web Audio API sintesis (jump, mine, place, hurt, eat, gameover, start)
@@ -70,6 +72,7 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 | **T-06** | Deployment GitHub Pages via GitHub CLI (`gh`) | Phase 5 | `DONE` | AI | Kode dipush ke `origin/main`; Pages aktif di https://fin8-blip.github.io/survival-block/ |
 | **T-07** | Perbaikan bug fatal "game tidak bisa dimulai" | Phase 3 | `DONE` | AI | `new Array(62.5)` RangeError, inisialisasi grid dunia, satu game loop, koordinat mouse vs kamera, CSS HUD/kontrol mobile |
 | **T-08** | Migrasi total ke voxel 3D first-person (WebGL) | Phase 3 | `DONE` | AI | Renderer WebGL manual, texture atlas prosedural, AO, fog, pointer lock, raycast tambang/pasang, fisika AABB, dunia 96x48x96 |
+| **T-09** | Resource air + tebang pohon + tangan karakter | Phase 3 | `DONE` | AI | Laut/danau transparan + berenang, pasir pantai, pohon tumbang sekali tebang, hand viewmodel + animasi swing/bob |
 
 *Status: `TODO` | `IN-PROGRESS` | `DONE`*
 
@@ -84,6 +87,7 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 | **v0.3.2** | 2026-10-31 | AI | GitHub Pages aktif (branch `main`, root) dan live di https://fin8-blip.github.io/survival-block/ | - |
 | **v0.4.0** | 2026-10-31 | AI | Fix fatal: `new Array(62.5)` RangeError pada `initWorld`, grid dunia diinisialisasi sebelum generate pohon, ukuran dunia 2048x540, satu game loop (`ensureLoop`), koordinat mouse memakai kamera, kurung `ctx.save/restore`, tambang/tempat tidak lagi diblokir cooldown ganda, kecepatan pemain di-clamp, CSS HUD/hotbar/inventori/kontrol mobile, kolom waktu leaderboard | - |
 | **v0.5.0** | 2026-10-31 | AI | **Rewritten to 3D**: engine voxel WebGL manual (shader, matriks, texture atlas 16px prosedural, ambient occlusion, fog), dunia 96x48x96 + pohon + ore, first-person pointer lock, DDA raycast tambang/pasang, fisika AABB + fall damage, highlight blok, hotbar 9 slot, kontrol mobile touch-look, leaderboard & username tetap | - |
+| **v0.6.0** | 2026-10-31 | AI | Menambahkan resource air: laut/danau transparan (pass blend terpisah), pantai pasir, berenang + kabut bawah air; menebang pohon sekali klik (batang tumbang + daun hilang, drop kayu); tangan karakter first-person memegang blok terpilih dengan animasi ayun saat tambang/pasang dan bob saat berjalan | - |
 | **v0.2.2** | 2026-10-24 | AI | Menambahkan panduan alur integrasi khusus Google AI Studio & penegasan repo wajib Public | `07475fb` |
 | **v0.2.1** | 2026-10-24 | AI | Menambahkan panduan detail aktivasi GitHub Pages (CLI gh api & Web UI visual) serta troubleshooting | `3aaf671` |
 | **v0.2.0** | 2026-10-24 | AI | Konfigurasi ulang ke Single Model AI untuk siswa, modularisasi 8 blok kode, dan penyesuaian matriks tugas | `2954bb0` |
