@@ -77,8 +77,8 @@ Dokumen ini adalah rencana kerja universal dan log perkembangan proyek pembuatan
 
 | Versi | Tanggal | Pelaksana | Ringkasan Perubahan | Referensi Commit |
 | :--- | :--- | :--- | :--- | :--- |
-| **v0.3.0** | 2026-10-24 | AI | Membuat `index.html` lengkap: Survival Block 2D (Minecraft-like), 3 pemain lokal, username, leaderboard LocalStorage, Web Audio API, inventori, tambang/bangun blok, HUD, screen shake | `pending` |
-| **v0.3.1** | 2026-10-24 | AI | Menambahkan kontrol layar sentuh (D-pad + tombol tambang/tempat/lompat) untuk mobile, dan persiapan deployment GitHub Pages | `pending` |
+| **v0.3.0** | 2026-10-24 | AI | Membuat `index.html` lengkap: Survival Block 2D (Minecraft-like), 3 pemain lokal, username, leaderboard LocalStorage, Web Audio API, inventori, tambang/bangun blok, HUD, screen shake | `8666244` |
+| **v0.3.1** | 2026-10-24 | AI | Menambahkan kontrol layar sentuh (D-pad + tombol tambang/tempat/lompat) untuk mobile, dan persiapan deployment GitHub Pages | `c9c3cc0` |
 | **v0.2.2** | 2026-10-24 | AI | Menambahkan panduan alur integrasi khusus Google AI Studio & penegasan repo wajib Public | `07475fb` |
 | **v0.2.1** | 2026-10-24 | AI | Menambahkan panduan detail aktivasi GitHub Pages (CLI gh api & Web UI visual) serta troubleshooting | `3aaf671` |
 | **v0.2.0** | 2026-10-24 | AI | Konfigurasi ulang ke Single Model AI untuk siswa, modularisasi 8 blok kode, dan penyesuaian matriks tugas | `2954bb0` |
