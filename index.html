@@ -2,81 +2,314 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
+<link rel="icon" href="data:,">
+<meta name="theme-color" content="#1a1a2e">
 <title>Survival Block 3D - Game Voxel</title>
 <style>
+  :root {
+    --accent: #e94560;
+    --accent-2: #ff6b7a;
+    --cyan: #4cc9f0;
+    --panel: rgba(24, 25, 43, 0.97);
+    --line: rgba(255, 255, 255, 0.14);
+  }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #1a1a2e; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-  #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+  html, body {
+    margin: 0; padding: 0; width: 100%; height: 100%; height: 100dvh;
+    overflow: hidden; background: #1a1a2e; color: #fff;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    overscroll-behavior: none;
+  }
+  #game-container { position: relative; width: 100vw; height: 100vh; height: 100dvh; overflow: hidden; }
   #gameCanvas { display: block; width: 100%; height: 100%; background: #87CEEB; cursor: crosshair; touch-action: none; }
   #crosshair { position: absolute; left: 50%; top: 50%; width: 22px; height: 22px; margin: -11px 0 0 -11px; pointer-events: none; z-index: 15; opacity: 0.85; display: none; }
   #crosshair:before, #crosshair:after { content: ''; position: absolute; background: #fff; box-shadow: 0 0 2px #000; }
   #crosshair:before { left: 10px; top: 0; width: 2px; height: 22px; }
   #crosshair:after { top: 10px; left: 0; height: 2px; width: 22px; }
-  .overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.72); display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 50; color: #fff; text-align: center; padding: 20px; }
+
+  .overlay {
+    position: absolute; inset: 0; background: rgba(0, 0, 0, 0.74); display: none;
+    flex-direction: column; align-items: center; justify-content: center; z-index: 50;
+    color: #fff; text-align: center; padding: max(14px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom));
+    overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;
+  }
   .overlay.active { display: flex; }
-  .card { background: rgba(30,30,50,0.96); padding: 28px; border-radius: 16px; border: 3px solid #e94560; box-shadow: 0 0 30px rgba(233,69,96,0.4); max-width: 440px; width: 92%; max-height: 92vh; overflow-y: auto; }
-  h1 { margin: 0 0 16px; font-size: 30px; color: #e94560; text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px #000; }
-  h2 { margin: 12px 0 16px; font-size: 20px; color: #fff; }
-  input[type="text"] { width: 100%; padding: 12px; font-size: 18px; border: 2px solid #444; border-radius: 8px; background: #111; color: #fff; margin-bottom: 16px; outline: none; }
-  input[type="text"]:focus { border-color: #e94560; }
-  button { width: 100%; padding: 14px; font-size: 18px; font-weight: bold; border: none; border-radius: 8px; background: #e94560; color: #fff; cursor: pointer; margin: 8px 0; transition: transform 0.1s, background 0.2s; }
-  button:active { transform: scale(0.96); }
-  button:hover { background: #ff6b7a; }
+  .card {
+    background: var(--panel); padding: clamp(18px, 4vw, 28px); border-radius: 16px;
+    border: 3px solid var(--accent); box-shadow: 0 0 30px rgba(233, 69, 96, 0.35);
+    max-width: 480px; width: 100%; max-height: calc(100dvh - 28px);
+    overflow-y: auto; -webkit-overflow-scrolling: touch; touch-action: pan-y;
+  }
+  h1 { margin: 0 0 8px; font-size: clamp(23px, 6.5vw, 30px); color: var(--accent); text-transform: uppercase; letter-spacing: 1.8px; text-shadow: 2px 2px #000; }
+  h2 { margin: 0; font-size: clamp(18px, 4.8vw, 21px); color: #fff; }
+  .tagline { color: #aab; margin: 0 0 14px; font-size: 13px; }
+  input[type="text"] {
+    width: 100%; padding: 12px; font-size: 18px; border: 2px solid #444; border-radius: 8px;
+    background: #111; color: #fff; margin-bottom: 12px; outline: none;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+  button {
+    width: 100%; min-height: 46px; padding: 12px 14px; font-size: 16px; font-weight: 700;
+    border: none; border-radius: 8px; background: var(--accent); color: #fff; cursor: pointer;
+    margin: 7px 0; transition: transform 0.1s, background 0.2s, border-color 0.2s;
+  }
+  button:active { transform: scale(0.97); }
+  button:hover { background: var(--accent-2); }
+  button:disabled { background: #3a3a4a !important; color: #888 !important; cursor: not-allowed; transform: none; }
   button.secondary { background: #4a4a6a; }
   button.secondary:hover { background: #6a6a8a; }
-  .hint { margin-top: 14px; font-size: 13px; color: #aaa; line-height: 1.5; }
-  .load-bar { width: 100%; height: 18px; background: rgba(0,0,0,0.5); border: 2px solid #000; border-radius: 9px; overflow: hidden; }
+  .hint { margin-top: 12px; font-size: 12px; color: #aaa; line-height: 1.55; }
+  .key {
+    display: inline-block; border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 4px;
+    padding: 0 4px; font-size: 10px; background: rgba(0, 0, 0, 0.25); vertical-align: 1px;
+  }
+
+  .mode-grid { display: flex; flex-direction: column; gap: 7px; margin: 0 0 12px; }
+  .mode-card {
+    display: flex; align-items: center; gap: 10px; width: 100%; min-height: 0;
+    padding: 9px 11px; margin: 0; background: rgba(255, 255, 255, 0.045);
+    border: 2px solid #3b3b58; border-radius: 10px; color: #fff; text-align: left;
+    font-size: 13px; font-weight: 700; line-height: 1.2;
+  }
+  .mode-card:hover { background: rgba(255, 255, 255, 0.09); }
+  .mode-card.active { border-color: var(--cyan); background: rgba(76, 201, 240, 0.13); box-shadow: 0 0 14px rgba(76, 201, 240, 0.18); }
+  .mode-ico { flex: 0 0 28px; width: 28px; font-size: 21px; text-align: center; }
+  .mode-txt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .mode-txt strong { font-size: 13px; }
+  .mode-sub { color: #aeb0c5; font-size: 10.5px; font-weight: 400; line-height: 1.35; }
+
+  .load-bar { width: 100%; height: 18px; background: rgba(0, 0, 0, 0.5); border: 2px solid #000; border-radius: 9px; overflow: hidden; }
   #loadFill { height: 100%; width: 0%; background: linear-gradient(90deg, #4cc9f0, #4361ee); transition: width 0.1s; }
-  #hud { position: absolute; top: 10px; left: 10px; z-index: 20; display: flex; flex-direction: column; gap: 6px; width: min(300px, 55vw); pointer-events: none; }
-  .bar-row { display: flex; align-items: center; gap: 8px; }
-  .stat-label { font-size: 12px; color: #fff; text-shadow: 1px 1px 2px #000; white-space: nowrap; }
-  .stat-bar { flex: 1; height: 14px; background: rgba(0,0,0,0.55); border: 2px solid #000; border-radius: 7px; overflow: hidden; }
+
+  #hud {
+    position: absolute; top: calc(10px + env(safe-area-inset-top)); left: calc(10px + env(safe-area-inset-left));
+    z-index: 20; display: flex; flex-direction: column; gap: 5px; width: min(330px, 62vw); pointer-events: none;
+  }
+  .bar-row { display: flex; align-items: center; gap: 7px; }
+  .stat-label { font-size: 11px; color: #fff; text-shadow: 1px 1px 2px #000; white-space: nowrap; }
+  .stat-bar { flex: 1; height: 13px; background: rgba(0, 0, 0, 0.55); border: 2px solid #000; border-radius: 7px; overflow: hidden; }
   .stat-fill { height: 100%; width: 100%; transition: width 0.2s; }
   .health-fill { background: linear-gradient(90deg, #e94560, #ff7b8a); }
   .hunger-fill { background: linear-gradient(90deg, #f6a623, #ffcf70); }
-  #hotbar { position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; z-index: 22; }
-  .slot { position: relative; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; font-size: 22px; background: rgba(0,0,0,0.55); border: 2px solid #555; border-radius: 8px; cursor: pointer; color: #fff; }
-  .slot.active { border-color: #e94560; box-shadow: 0 0 10px rgba(233,69,96,0.9); }
-  .slot-count { position: absolute; right: 3px; bottom: 1px; font-size: 11px; color: #fff; text-shadow: 1px 1px #000; }
-  .inv-btn { position: absolute; right: 14px; bottom: 74px; width: auto; margin: 0; padding: 10px 14px; font-size: 13px; z-index: 22; }
-  .craft-btn { bottom: 122px; }
-  #craft-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; width: 420px; max-width: 94vw; max-height: 85vh; overflow-y: auto; padding: 22px; background: rgba(30,30,50,0.98); border: 3px solid #4cc9f0; border-radius: 14px; color: #fff; z-index: 70; }
-  #craft-panel.active { display: block; }
-  #craft-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-  .recipe { background: rgba(0,0,0,0.45); border: 2px solid #444; border-radius: 10px; padding: 10px; text-align: left; }
-  .recipe.ready { border-color: #4cc9f0; }
-  .recipe-head { display: flex; align-items: center; gap: 8px; font-weight: bold; }
-  .recipe-icon { font-size: 22px; }
-  .recipe-ing { font-size: 12px; color: #aaa; margin: 6px 0 8px; }
-  .recipe button { width: 100%; margin: 0; padding: 8px; font-size: 14px; }
-  .recipe button:disabled { background: #3a3a4a; color: #888; cursor: not-allowed; }
-  #toast { position: absolute; top: 22%; left: 50%; transform: translateX(-50%); padding: 10px 18px; background: rgba(0,0,0,0.85); border: 2px solid #e94560; border-radius: 8px; color: #fff; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 60; }
+  .hud-line { display: flex; gap: 5px; flex-wrap: wrap; align-items: center; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 4px; padding: 3px 7px; border-radius: 6px;
+    background: rgba(0, 0, 0, 0.42); border: 1px solid rgba(255, 255, 255, 0.14);
+    color: #fff; font-size: 10.5px; line-height: 1.2; text-shadow: 1px 1px 2px #000;
+  }
+  .pill.mode-survival { border-color: rgba(76, 201, 240, 0.5); }
+  .pill.mode-creative { border-color: rgba(255, 207, 112, 0.6); }
+  .pill.mode-challenge { border-color: rgba(233, 69, 96, 0.7); }
+  #flyState { display: none; }
+  body:not(.playing) #hud,
+  body:not(.playing) #hotbar,
+  body:not(.playing) #invBtn,
+  body:not(.playing) #craftBtn,
+  body:not(.playing) #itemLabel { display: none; }
+
+  #pauseBtn {
+    position: absolute; top: calc(10px + env(safe-area-inset-top)); right: calc(10px + env(safe-area-inset-right));
+    width: 42px; height: 42px; min-height: 0; margin: 0; padding: 0; display: none;
+    align-items: center; justify-content: center; z-index: 32; font-size: 17px;
+    background: rgba(0, 0, 0, 0.48); border: 2px solid rgba(255, 255, 255, 0.32); border-radius: 10px;
+  }
+  #pauseBtn.active { display: flex; }
+
+  #hotbar {
+    position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 4px; z-index: 22; max-width: calc(100vw - 12px);
+  }
+  .slot {
+    position: relative; width: clamp(34px, 9.2vw, 52px); height: clamp(34px, 9.2vw, 52px);
+    display: flex; align-items: center; justify-content: center; font-size: clamp(16px, 4.4vw, 24px);
+    background: rgba(0, 0, 0, 0.55); border: 2px solid #555; border-radius: 8px;
+    cursor: pointer; color: #fff; flex: 0 0 auto;
+  }
+  .slot.active { border-color: var(--accent); box-shadow: 0 0 10px rgba(233, 69, 96, 0.9); }
+  .slot-count { position: absolute; right: 3px; bottom: 1px; font-size: 10px; color: #fff; text-shadow: 1px 1px #000; }
+  .slot-dur { position: absolute; left: 3px; top: 1px; font-size: 8px; color: #9ff; text-shadow: 1px 1px #000; }
+  #itemLabel {
+    position: absolute; bottom: 74px; left: 50%; transform: translateX(-50%);
+    display: none; z-index: 21; pointer-events: none; white-space: nowrap;
+    padding: 3px 9px; border-radius: 6px; background: rgba(0, 0, 0, 0.4);
+    color: #fff; font-size: 11px; text-shadow: 1px 1px 2px #000;
+  }
+  body.playing #itemLabel { display: block; }
+
+  .inv-btn {
+    position: absolute; right: 14px; bottom: 74px; width: auto; min-height: 0;
+    margin: 0; padding: 9px 12px; font-size: 12px; z-index: 22;
+  }
+  .craft-btn { bottom: 120px; }
+  body.touch .inv-btn {
+    bottom: auto; top: calc(58px + env(safe-area-inset-top));
+    right: calc(10px + env(safe-area-inset-right)); padding: 8px 9px; font-size: 11px;
+  }
+  body.touch .craft-btn { top: calc(101px + env(safe-area-inset-top)); }
+
+  #toast {
+    position: absolute; top: 20%; left: 50%; transform: translateX(-50%);
+    padding: 9px 16px; background: rgba(0, 0, 0, 0.88); border: 2px solid var(--accent);
+    border-radius: 8px; color: #fff; font-size: 13px; opacity: 0; pointer-events: none;
+    transition: opacity 0.25s; z-index: 80; max-width: 90vw; text-align: center;
+  }
   #toast.show { opacity: 1; }
-  #inventory-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; width: 340px; max-width: 92vw; padding: 22px; background: rgba(30,30,50,0.97); border: 3px solid #e94560; border-radius: 14px; color: #fff; z-index: 70; }
-  #inventory-panel.active { display: block; }
-  #inv-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 16px 0; }
-  .inv-item { position: relative; height: 58px; display: flex; align-items: center; justify-content: center; font-size: 24px; background: rgba(0,0,0,0.5); border: 2px solid #444; border-radius: 8px; cursor: pointer; }
-  .inv-item.selected { border-color: #e94560; }
-  .inv-qty { position: absolute; right: 4px; bottom: 2px; font-size: 11px; }
-  .inv-close { background: #4a4a6a; }
-  #leaderboard-table { width: 100%; border-collapse: collapse; font-size: 13px; margin-bottom: 12px; }
-  #leaderboard-table th, #leaderboard-table td { padding: 5px 6px; border-bottom: 1px solid rgba(255,255,255,0.12); text-align: left; }
-  #leaderboard-table th { color: #e94560; text-transform: uppercase; font-size: 11px; }
-  #mobile-controls { position: absolute; left: 0; right: 0; bottom: 0; display: none; align-items: flex-end; justify-content: space-between; padding: 14px; z-index: 25; pointer-events: none; }
-  .d-pad { display: grid; grid-template-columns: repeat(3, 52px); grid-template-rows: repeat(3, 52px); gap: 4px; pointer-events: auto; }
-  .dp-btn { display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.45); border: 2px solid rgba(255,255,255,0.35); border-radius: 10px; color: #fff; font-size: 18px; user-select: none; touch-action: none; }
-  .dp-up { grid-column: 2; grid-row: 1; } .dp-left { grid-column: 1; grid-row: 2; } .dp-right { grid-column: 3; grid-row: 2; } .dp-down { grid-column: 2; grid-row: 3; }
-  .action-btns { display: flex; gap: 10px; pointer-events: auto; }
-  .act-btn { width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: rgba(233,69,96,0.8); border: 2px solid rgba(255,255,255,0.4); border-radius: 50%; font-size: 24px; color: #fff; user-select: none; touch-action: none; }
+
+  #inventory-panel, #craft-panel {
+    position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+    display: none; flex-direction: column; width: min(580px, 94vw);
+    max-height: calc(100dvh - 24px); overflow-y: auto; -webkit-overflow-scrolling: touch;
+    touch-action: pan-y; padding: clamp(14px, 3.5vw, 22px); background: var(--panel);
+    border: 3px solid var(--cyan); border-radius: 14px; color: #fff; z-index: 70;
+  }
+  #inventory-panel > *, #craft-panel > * { flex-shrink: 0; }
+  #craft-panel { overflow: hidden; }
+  #craft-list { flex: 1 1 auto; min-height: 120px; overflow-y: auto; -webkit-overflow-scrolling: touch; padding-right: 3px; }
+  #craft-panel > .hint { flex: 0 0 auto; margin-top: 8px; }
+  #inventory-panel { border-color: var(--accent); }
+  #inventory-panel.active, #craft-panel.active { display: flex; }
+  .panel-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+  .panel-x {
+    width: 40px; height: 40px; min-height: 0; margin: 0; padding: 0; flex: 0 0 40px;
+    display: flex; align-items: center; justify-content: center; font-size: 18px;
+    background: #4a4a6a; border-radius: 9px;
+  }
+  .inv-hint { color: #9fa2b8; font-size: 11px; line-height: 1.4; margin-bottom: 9px; }
+  #inv-grid, #creative-palette {
+    display: grid; grid-template-columns: repeat(9, 1fr); gap: 5px; margin: 0 0 12px;
+  }
+  .inv-item {
+    position: relative; height: clamp(38px, 7.5vw, 52px); display: flex;
+    align-items: center; justify-content: center; font-size: clamp(17px, 4vw, 24px);
+    background: rgba(0, 0, 0, 0.5); border: 2px solid #41415c; border-radius: 7px; cursor: pointer;
+  }
+  .inv-item.hotbar-slot { background: rgba(76, 201, 240, 0.12); border-color: rgba(76, 201, 240, 0.38); }
+  .inv-item.selected { border-color: var(--accent); box-shadow: 0 0 8px rgba(233, 69, 96, 0.7); }
+  .inv-qty { position: absolute; right: 3px; bottom: 1px; font-size: 10px; text-shadow: 1px 1px #000; }
+  .inv-tag { position: absolute; left: 3px; top: 1px; font-size: 8px; color: #8fe8ff; }
+  .inv-empty { opacity: 0.35; }
+  #creative-wrap { display: none; margin-top: 4px; border-top: 1px solid var(--line); padding-top: 11px; }
+  body.creative #creative-wrap { display: block; }
+  #creative-wrap h3 { margin: 0 0 4px; font-size: 14px; color: #ffcf70; }
+  #creative-wrap p { margin: 0 0 9px; color: #9fa2b8; font-size: 11px; }
+
+  #station-status { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 9px; }
+  .station-badge {
+    display: inline-flex; align-items: center; gap: 4px; padding: 4px 8px; border-radius: 6px;
+    border: 1px solid #444; background: rgba(0, 0, 0, 0.35); color: #999; font-size: 10.5px;
+  }
+  .station-badge.ok { border-color: rgba(76, 201, 240, 0.65); color: #b7f0ff; background: rgba(76, 201, 240, 0.1); }
+  #craft-cats { display: flex; gap: 5px; overflow-x: auto; -webkit-overflow-scrolling: touch; padding: 0 0 7px; touch-action: pan-x; }
+  .cat-btn {
+    width: auto; min-height: 0; flex: 0 0 auto; margin: 0; padding: 7px 10px;
+    font-size: 11px; background: #343450; border-radius: 7px;
+  }
+  .cat-btn.active { background: var(--accent); }
+  #craft-list { display: flex; flex-direction: column; gap: 7px; padding-bottom: 4px; }
+  .recipe { background: rgba(0, 0, 0, 0.38); border: 2px solid #41415c; border-radius: 9px; padding: 9px 10px; text-align: left; }
+  .recipe.ready { border-color: var(--cyan); }
+  .recipe.locked { opacity: 0.68; }
+  .recipe-head { display: flex; align-items: center; gap: 7px; font-weight: 700; font-size: 12.5px; }
+  .recipe-icon { font-size: 20px; }
+  .recipe-station { margin-left: auto; font-size: 9.5px; color: #ffcf70; padding: 2px 5px; border: 1px solid rgba(255, 207, 112, 0.35); border-radius: 4px; white-space: nowrap; }
+  .recipe-ing { font-size: 10.5px; color: #aeb0c5; margin: 5px 0 7px; line-height: 1.5; }
+  .recipe-ing .lack { color: #ff8b95; }
+  .recipe button { width: 100%; min-height: 36px; padding: 7px; font-size: 12px; margin: 0; }
+
+  #leaderboard-table { width: 100%; border-collapse: collapse; font-size: 11.5px; margin-bottom: 10px; }
+  #leaderboard-table th, #leaderboard-table td { padding: 5px 4px; border-bottom: 1px solid var(--line); text-align: left; }
+  #leaderboard-table th { color: var(--accent); text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.4px; }
+  #lb-filter { display: flex; gap: 5px; margin-bottom: 10px; }
+  #lb-filter button { width: auto; flex: 1; min-height: 0; margin: 0; padding: 7px 4px; font-size: 11px; background: #343450; }
+  #lb-filter button.active { background: var(--accent); }
+
+  #mobile-controls {
+    position: absolute; left: 0; right: 0; bottom: 0; display: none; align-items: flex-end;
+    justify-content: space-between; gap: 10px; z-index: 28; pointer-events: none;
+    padding: 12px calc(12px + env(safe-area-inset-right)) calc(12px + env(safe-area-inset-bottom)) calc(12px + env(safe-area-inset-left));
+  }
   body.touch #mobile-controls { display: flex; }
-  body.touch #hotbar { bottom: 104px; }
-  body.touch .inv-btn { bottom: 158px; }
-  body.touch .craft-btn { bottom: 206px; }
+  body:not(.playing) #mobile-controls { display: none; }
+  body.panel-open #mobile-controls { display: none; }
+  body.panel-open .inv-btn { display: none; }
+  .d-pad {
+    display: grid; grid-template-columns: repeat(3, clamp(40px, 11.5vw, 56px));
+    grid-template-rows: repeat(3, clamp(40px, 11.5vw, 56px)); gap: 4px; pointer-events: auto;
+  }
+  .dp-btn {
+    display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.44);
+    border: 2px solid rgba(255, 255, 255, 0.34); border-radius: 10px; color: #fff;
+    font-size: clamp(14px, 4vw, 20px); user-select: none; touch-action: none;
+  }
+  .dp-btn:active { background: rgba(233, 69, 96, 0.55); }
+  .dp-up { grid-column: 2; grid-row: 1; } .dp-left { grid-column: 1; grid-row: 2; }
+  .dp-right { grid-column: 3; grid-row: 2; } .dp-down { grid-column: 2; grid-row: 3; }
+  .mobile-right { display: flex; flex-direction: column; align-items: flex-end; gap: 7px; }
+  .extra-row { display: flex; gap: 6px; pointer-events: auto; }
+  .extra-btn {
+    display: none; align-items: center; justify-content: center; width: auto; min-height: 32px;
+    margin: 0; padding: 0 9px; font-size: 10px; border-radius: 8px;
+    background: rgba(0, 0, 0, 0.52); border: 2px solid rgba(255, 255, 255, 0.28);
+  }
+  .extra-btn.active { background: rgba(76, 201, 240, 0.55); border-color: #b9f2ff; }
+  body.touch #runBtn { display: flex; }
+  body.creative #flyBtn { display: flex; }
+  body.flying #downBtn { display: flex; }
+  .action-grid {
+    display: grid; grid-template-columns: repeat(2, clamp(54px, 14.5vw, 68px));
+    gap: 7px; pointer-events: auto;
+  }
+  .act-btn {
+    width: 100%; height: clamp(54px, 14.5vw, 68px); min-height: 0; margin: 0; padding: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px;
+    border-radius: 50%; border: 2px solid rgba(255, 255, 255, 0.4);
+    background: rgba(233, 69, 96, 0.72); color: #fff; font-size: clamp(19px, 5vw, 26px);
+    line-height: 1; user-select: none; touch-action: none;
+  }
+  .act-btn span { font-size: 8px; font-weight: 600; opacity: 0.9; }
+  .act-btn.act-place { background: rgba(76, 201, 240, 0.68); }
+  .act-btn.act-jump { background: rgba(67, 97, 238, 0.75); }
+  .act-btn.act-use { background: rgba(246, 166, 35, 0.78); }
+  .act-btn:active { filter: brightness(1.25); transform: scale(0.95); }
+  body.touch #hotbar { bottom: calc(196px + env(safe-area-inset-bottom)); }
+  body.touch #itemLabel { bottom: calc(248px + env(safe-area-inset-bottom)); }
   body.touch #crosshair { display: block; }
+  body.touch #toast { top: 15%; }
+
+  @media (max-width: 520px) {
+    #leaderboard-table th:nth-child(6), #leaderboard-table td:nth-child(6) { display: none; }
+    #leaderboard-table { font-size: 10.5px; }
+  }
+  @media (max-width: 430px) {
+    .card { padding: 16px; border-radius: 13px; }
+    .mode-sub { font-size: 10px; }
+    .hint { font-size: 11px; }
+    body.touch #inv-grid, body.touch #creative-palette { grid-template-columns: repeat(6, 1fr); gap: 4px; }
+    .inv-item { height: 42px; }
+    .recipe-head { font-size: 12px; }
+  }
+  @media (max-height: 620px) {
+    h1 { margin-bottom: 5px; }
+    .tagline { margin-bottom: 8px; }
+    .mode-grid { gap: 5px; margin-bottom: 8px; }
+    .mode-card { padding: 7px 9px; }
+    .mode-sub { display: none; }
+    .hint { margin-top: 7px; line-height: 1.35; }
+    .overlay { justify-content: flex-start; }
+    .card { margin: auto; }
+  }
+  @media (orientation: landscape) and (max-height: 500px) {
+    .card { max-width: 620px; }
+    .mode-grid { display: grid; grid-template-columns: repeat(3, 1fr); }
+    .mode-card { flex-direction: column; align-items: flex-start; gap: 3px; }
+    .mode-ico { font-size: 18px; }
+    .mode-sub { display: none; }
+  }
+
 </style>
 </head>
 <body>
@@ -95,17 +328,19 @@
       <div class="stat-bar"><div id="hungerFill" class="stat-fill hunger-fill"></div></div>
       <span id="hungerText" class="stat-label">100/100</span>
     </div>
-    <div style="display:flex;gap:10px;align-items:center;">
-      <span class="stat-label">Waktu</span>
-      <span id="timerText" class="stat-label">00:00</span>
-      <span class="stat-label">Blok</span>
-      <span id="blocksText" class="stat-label">0</span>
+    <div class="hud-line">
+      <span id="modeBadge" class="pill">🛡️ Bertahan</span>
+      <span class="pill">⏱ <span id="timerText">00:00</span></span>
+      <span class="pill">⛏ <span id="blocksText">0</span></span>
+      <span id="flyState" class="pill">✈ Terbang</span>
     </div>
   </div>
 
+  <button id="pauseBtn" title="Pause (Esc)" aria-label="Pause">⏸</button>
+  <div id="itemLabel"></div>
   <div id="hotbar"></div>
-  <button id="invBtn" class="inv-btn">Inventori (E)</button>
-  <button id="craftBtn" class="inv-btn craft-btn">Kerajinan (C)</button>
+  <button id="invBtn" class="inv-btn">🎒 Inventori <span class="key">E</span></button>
+  <button id="craftBtn" class="inv-btn craft-btn">🛠 Kerajinan <span class="key">C</span></button>
 
   <div id="mobile-controls">
     <div class="d-pad">
@@ -114,10 +349,18 @@
       <div class="dp-btn dp-left" data-dir="left">&#9664;</div>
       <div class="dp-btn dp-right" data-dir="right">&#9654;</div>
     </div>
-    <div class="action-btns">
-      <div class="act-btn act-mine" data-act="mine">&#9935;</div>
-      <div class="act-btn act-place" data-act="place">&#9635;</div>
-      <div class="act-btn act-jump" data-act="jump">&#9651;</div>
+    <div class="mobile-right">
+      <div class="extra-row">
+        <button id="runBtn" class="extra-btn">🏃 Lari</button>
+        <button id="flyBtn" class="extra-btn">✈ Terbang</button>
+        <button id="downBtn" class="extra-btn">⬇ Turun</button>
+      </div>
+      <div class="action-grid">
+        <button class="act-btn act-mine" data-act="mine">⛏<span>Tambang</span></button>
+        <button class="act-btn act-place" data-act="place">▣<span>Pasang</span></button>
+        <button class="act-btn act-jump" data-act="jump">▲<span>Lompat</span></button>
+        <button class="act-btn act-use" data-act="use">🍎<span>Makan</span></button>
+      </div>
     </div>
   </div>
 
@@ -126,11 +369,29 @@
   <div id="overlayMenu" class="overlay active">
     <div class="card">
       <h1>Survival Block 3D</h1>
-      <p style="color:#aaa;margin-bottom:18px;">Voxel 3D: tambang, bangun, bertahan</p>
-      <button id="btnStart">Mulai Permainan</button>
+      <p class="tagline">Tambang pohon, crafting item, bangun dunia voxel.</p>
+      <div id="modeSelect" class="mode-grid" role="group" aria-label="Pilih mode">
+        <button class="mode-card active" data-mode="survival" aria-pressed="true">
+          <span class="mode-ico">🛡️</span>
+          <span class="mode-txt"><strong>Bertahan</strong><span class="mode-sub">Crafting lengkap, jaga HP &amp; lapar, tanpa batas waktu.</span></span>
+        </button>
+        <button class="mode-card" data-mode="creative" aria-pressed="false">
+          <span class="mode-ico">🎨</span>
+          <span class="mode-txt"><strong>Kreatif</strong><span class="mode-sub">Terbang, blok tak terbatas, tambang instan, tanpa damage.</span></span>
+        </button>
+        <button class="mode-card" data-mode="challenge" aria-pressed="false">
+          <span class="mode-ico">⏱️</span>
+          <span class="mode-txt"><strong>Tantangan 3 Menit</strong><span class="mode-sub">Bertahan 3 menit, lapar lebih cepat, skor 2x.</span></span>
+        </button>
+      </div>
+      <button id="btnStart">Mulai — Bertahan</button>
       <button id="btnChangeName" class="secondary">Ganti Nama</button>
       <button id="btnLeaderboard" class="secondary">Papan Peringkat</button>
-      <div class="hint">WASD gerak | Mouse lihat | Klik kiri tambang | Klik kanan pasang blok<br>Spasi lompat | Shift lari | 1-9 pilih blok | E inventori | Esc pause<br>Klik batang pohon untuk menebang (pohon tumbang, daun ikut hilang)<br>Air bisa dipakai berenang: tahan Spasi untuk naik</div>
+      <div class="hint">
+        <span style="color:#8fe8ff"><b>Alur awal:</b> tebang pohon → Papan Kayu → Tongkat → Meja Kerajinan → Beliung Kayu → tambang batu → Tungku → besi &amp; kaca.</span><br>
+        <b>Laptop:</b> WASD gerak · mouse lihat · klik kiri tambang · klik kanan pasang · Spasi lompat · Shift lari · 1–9 pilih slot · E inventori · C crafting · F makan · V terbang (Kreatif) · Esc pause.<br>
+        <b>HP/Tablet:</b> geser layar untuk lihat · D-pad jalan · tombol Tambang/Pasang/Lompat/Makan · tombol pause di kanan atas. Item baru bisa dipindah ke hotbar lewat panel Inventori.
+      </div>
     </div>
   </div>
 
@@ -138,17 +399,20 @@
     <div class="card">
       <h1>Buat Karakter</h1>
       <input type="text" id="inputUsername" maxlength="15" placeholder="Masukkan nama (1-15)">
-      <div id="usernameError" style="color:#ff6b6b;font-size:13px;margin:8px 0;display:none;"></div>
-      <button id="btnSetUsername">Mulai Main</button>
-      <div class="hint">Nama disimpan di browser (LocalStorage)</div>
+      <div id="usernameError" style="color:#ff6b6b;font-size:13px;margin:4px 0 8px;display:none;"></div>
+      <button id="btnSetUsername">Simpan &amp; Mulai</button>
+      <button id="btnUsernameBack" class="secondary">Kembali</button>
+      <div class="hint">Nama disimpan di browser (LocalStorage).</div>
     </div>
   </div>
 
   <div id="overlayPause" class="overlay">
     <div class="card">
       <h1>Dipause</h1>
+      <p id="pauseModeText" class="tagline"></p>
       <button id="btnResume">Lanjutkan</button>
       <button id="btnMenu" class="secondary">Kembali ke Menu</button>
+      <div class="hint" id="pauseHint">Tekan Esc untuk melanjutkan.</div>
     </div>
   </div>
 
@@ -157,13 +421,14 @@
       <h1>Membuat Dunia</h1>
       <div class="load-bar"><div id="loadFill"></div></div>
       <p id="loadText" style="color:#aaa;margin:10px 0 0;">0%</p>
+      <p class="hint">Menyiapkan 144 chunk, pohon, laut, dan gua permukaan...</p>
     </div>
   </div>
 
   <div id="overlayGameOver" class="overlay">
     <div class="card">
       <h1 id="goTitle">Game Over</h1>
-      <p id="goMessage" style="color:#aaa;margin-bottom:20px;"></p>
+      <p id="goMessage" class="tagline"></p>
       <button id="btnRestart">Coba Lagi</button>
       <button id="btnGoMenu" class="secondary">Menu Utama</button>
     </div>
@@ -172,8 +437,13 @@
   <div id="overlayLeaderboard" class="overlay">
     <div class="card">
       <h1>Papan Peringkat</h1>
+      <div id="lb-filter">
+        <button class="active" data-lb="all">Semua</button>
+        <button data-lb="survival">Bertahan</button>
+        <button data-lb="challenge">Tantangan</button>
+      </div>
       <table id="leaderboard-table">
-        <thead><tr><th>#</th><th>Nama</th><th>Skor</th><th>Waktu</th><th>Tanggal</th></tr></thead>
+        <thead><tr><th>#</th><th>Nama</th><th>Mode</th><th>Skor</th><th>Waktu</th><th>Tanggal</th></tr></thead>
         <tbody id="leaderboard-body"></tbody>
       </table>
       <button id="btnLbMenu" class="secondary">Menu Utama</button>
@@ -181,18 +451,39 @@
   </div>
 
   <div id="inventory-panel">
-    <h2 style="margin-top:0;">Inventori</h2>
+    <div class="panel-head">
+      <h2>Inventori</h2>
+      <button id="invClose" class="panel-x" aria-label="Tutup inventori">✕</button>
+    </div>
+    <div class="inv-hint">Slot 1–9 = hotbar. Klik item di baris lain untuk menukar dengan slot hotbar yang sedang aktif.</div>
     <div id="inv-grid"></div>
-    <button id="invClose" class="inv-close">Tutup (E)</button>
+    <div id="creative-wrap">
+      <h3>Palet Kreatif</h3>
+      <p>Klik blok untuk menambahkan 64 buah ke inventori.</p>
+      <div id="creative-palette"></div>
+    </div>
   </div>
 
   <div id="craft-panel">
-    <h2 style="margin-top:0;">Kerajinan</h2>
+    <div class="panel-head">
+      <h2>Kerajinan</h2>
+      <button id="craftClose" class="panel-x" aria-label="Tutup kerajinan">✕</button>
+    </div>
+    <div id="station-status"></div>
+    <div id="craft-cats">
+      <button class="cat-btn active" data-cat="all">Semua</button>
+      <button class="cat-btn" data-cat="wood">Kayu</button>
+      <button class="cat-btn" data-cat="tools">Alat</button>
+      <button class="cat-btn" data-cat="blocks">Blok</button>
+      <button class="cat-btn" data-cat="furnace">Tungku</button>
+      <button class="cat-btn" data-cat="food">Makanan</button>
+    </div>
     <div id="craft-list"></div>
-    <button id="craftClose" class="inv-close">Tutup (C)</button>
+    <div class="hint">Resep bertanda 🛠 butuh Meja Kerajinan di dekatmu. Resep 🔥 butuh Tungku di dekatmu. Kreatif tidak butuh stasiun.</div>
   </div>
 </div>
 <script>
+
 /* 1. CONFIG, CANVAS & WEBGL SETUP */
 const canvas = document.getElementById('gameCanvas');
 const gl = canvas.getContext('webgl', { antialias: false, alpha: false, powerPreference: 'high-performance' })
@@ -215,14 +506,35 @@ const SKY = [0.53, 0.75, 0.92];
 const FOG_NEAR = 40, FOG_FAR = 92;
 
 const STATE = { MENU:'MENU', USERNAME:'USERNAME', LOADING:'LOADING', PLAYING:'PLAYING', PAUSED:'PAUSED', GAMEOVER:'GAMEOVER', LEADERBOARD:'LEADERBOARD' };
+const MODES = {
+  survival: { key:'survival', name:'Bertahan', icon:'🛡️', scoreMult:1, timeLimit:0 },
+  creative: { key:'creative', name:'Kreatif', icon:'🎨', scoreMult:0, timeLimit:0 },
+  challenge:{ key:'challenge', name:'Tantangan 3 Menit', icon:'⏱️', scoreMult:2, timeLimit:180 }
+};
 let gameState = STATE.MENU;
+let gameMode = 'survival';
+let selectedMode = 'survival';
+let lbFilter = 'all';
 let lastTime = 0;
 let accumulator = 0;
 let timerSec = 0;
 
+/* Kontrol sentuh otomatis: HP/tablet memakai pointer kasar, laptop tetap keyboard+mouse.
+   ?touch=1 / ?touch=0 bisa dipakai untuk memaksa mode kontrol saat menguji. */
+const IS_TOUCH = (function () {
+  try {
+    const q = new URLSearchParams(location.search).get('touch');
+    if (q === '1') return true;
+    if (q === '0') return false;
+  } catch (e) {}
+  return (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) ||
+         (('ontouchstart' in window) && navigator.maxTouchPoints > 0 && window.innerWidth < 1024);
+})();
+if (IS_TOUCH) document.body.classList.add('touch');
+
 let viewW = 1, viewH = 1;
 function resizeCanvas() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  const dpr = Math.min(window.devicePixelRatio || 1, IS_TOUCH ? 1.5 : 2.5);
   const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
   const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
   if (w !== canvas.width || h !== canvas.height) {
@@ -241,7 +553,11 @@ gl.clearColor(SKY[0], SKY[1], SKY[2], 1);
 /* 2. AUDIO SYNTHESIS (Web Audio API) */
 const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx = null;
-function ensureAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
+function ensureAudio() {
+  if (!AudioCtx) return;
+  if (!audioCtx) audioCtx = new AudioCtx();
+  if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+}
 function playTone(type, freq, duration, vol) {
   if (!audioCtx) return;
   const v = vol === undefined ? 0.08 : vol;
@@ -259,6 +575,8 @@ function sfxJump() { ensureAudio(); playTone('sine', 440, 0.1, 0.06); playTone('
 function sfxMine() { ensureAudio(); playTone('square', 220, 0.08, 0.05); playTone('square', 165, 0.08, 0.04); }
 function sfxPlace() { ensureAudio(); playTone('sine', 600, 0.08, 0.05); }
 function sfxHurt() { ensureAudio(); playTone('sawtooth', 150, 0.3, 0.08); }
+function sfxEat() { ensureAudio(); playTone('triangle', 320, 0.09, 0.05); playTone('triangle', 260, 0.12, 0.05); }
+function sfxWin() { ensureAudio(); playTone('square', 523, 0.12, 0.06); playTone('square', 659, 0.12, 0.06); playTone('square', 784, 0.25, 0.07); }
 function sfxGameOver() { ensureAudio(); playTone('sawtooth', 100, 0.6, 0.09); playTone('sawtooth', 80, 0.6, 0.09); }
 function sfxStart() { ensureAudio(); playTone('square', 400, 0.1, 0.06); playTone('square', 600, 0.1, 0.06); playTone('square', 800, 0.2, 0.07); }
 
@@ -266,16 +584,25 @@ function sfxStart() { ensureAudio(); playTone('square', 400, 0.1, 0.06); playTon
 const keys = {};
 let mouseBreak = false;
 let virtualLeft = false, virtualRight = false, virtualForward = false, virtualBack = false;
+let mobileJump = false, mobileSprint = false, mobileDown = false;
+let lastModeToast = 0;
 
 window.addEventListener('keydown', function (e) {
   if (['ArrowUp','ArrowDown','ArrowLeft','ArrowRight',' ','Tab'].indexOf(e.key) !== -1) e.preventDefault();
   keys[e.code] = true;
   keys[e.key.toLowerCase()] = true;
   if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') keys['shift'] = true;
+  if (e.repeat) return;
   if (/^Digit[1-9]$/.test(e.code) && gameState === STATE.PLAYING) selectSlot(parseInt(e.code.slice(5), 10) - 1);
-  if (e.key === 'Escape' && gameState === STATE.PLAYING) pauseGame();
-  if ((e.key === 'e' || e.key === 'E') && gameState === STATE.PLAYING) toggleInventory();
-  if ((e.key === 'c' || e.key === 'C') && gameState === STATE.PLAYING) toggleCraft();
+  if (e.key === 'Escape') {
+    if (gameState === STATE.PLAYING) pauseGame();
+    else if (gameState === STATE.PAUSED) resumeGame();
+  }
+  if (gameState !== STATE.PLAYING) return;
+  if (e.key === 'e' || e.key === 'E') toggleInventory();
+  else if (e.key === 'c' || e.key === 'C') toggleCraft();
+  else if (e.key === 'f' || e.key === 'F') useSelected();
+  else if (e.key === 'v' || e.key === 'V') toggleFly();
 });
 window.addEventListener('keyup', function (e) {
   keys[e.code] = false;
@@ -284,16 +611,17 @@ window.addEventListener('keyup', function (e) {
 });
 
 canvas.addEventListener('click', function () {
-  if (gameState === STATE.PLAYING && document.pointerLockElement !== canvas) requestLock();
+  if (!IS_TOUCH && gameState === STATE.PLAYING && document.pointerLockElement !== canvas) requestLock();
 });
 function requestLock() {
+  if (IS_TOUCH) return;
   try { const r = canvas.requestPointerLock(); if (r && r.catch) r.catch(function () {}); } catch (e) {}
 }
 document.addEventListener('pointerlockchange', function () {
   const locked = document.pointerLockElement === canvas;
   const panelOpen = document.getElementById('inventory-panel').classList.contains('active') ||
                     document.getElementById('craft-panel').classList.contains('active');
-  if (!locked && gameState === STATE.PLAYING && !panelOpen) pauseGame();
+  if (!locked && gameState === STATE.PLAYING && !panelOpen && !IS_TOUCH) pauseGame();
 });
 let dragging = false, dragX = 0, dragY = 0;
 document.addEventListener('mousemove', function (e) {
@@ -323,7 +651,10 @@ document.addEventListener('mousedown', function (e) {
 });
 document.addEventListener('mouseup', function (e) { if (e.button === 0) { mouseBreak = false; dragging = false; } });
 document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
-window.addEventListener('blur', function () { mouseBreak = false; });
+window.addEventListener('blur', function () { mouseBreak = false; mobileJump = false; });
+document.addEventListener('visibilitychange', function () {
+  if (document.hidden && gameState === STATE.PLAYING) pauseGame();
+});
 canvas.addEventListener('wheel', function (e) {
   if (gameState !== STATE.PLAYING) return;
   e.preventDefault();
@@ -337,7 +668,7 @@ function clampPitch() {
   if (player.pitch < -lim) player.pitch = -lim;
 }
 
-/* Mobile: geser layar untuk melihat, D-pad untuk jalan */
+/* Mobile: geser layar untuk melihat, D-pad untuk jalan, tombol besar untuk aksi */
 let lookTouch = null;
 canvas.addEventListener('touchstart', function (e) {
   if (gameState !== STATE.PLAYING) return;
@@ -361,39 +692,72 @@ canvas.addEventListener('touchmove', function (e) {
 canvas.addEventListener('touchend', function () { lookTouch = null; });
 canvas.addEventListener('touchcancel', function () { lookTouch = null; });
 
-if (('ontouchstart' in window) || navigator.maxTouchPoints > 0) document.body.classList.add('touch');
-
 /* 4. WORLD DATA, BLOCK TYPES & GENERATION */
-const BLOCK = { AIR:0, GRASS:1, DIRT:2, STONE:3, WOOD:4, LEAVES:5, COAL_ORE:6, IRON_ORE:7, COBBLESTONE:8, PLANKS:9, SAND:10, WATER:11, BEDROCK:12, CLOUD:13 };
+const BLOCK = {
+  AIR:0, GRASS:1, DIRT:2, STONE:3, WOOD:4, LEAVES:5, COAL_ORE:6, IRON_ORE:7,
+  COBBLESTONE:8, PLANKS:9, SAND:10, WATER:11, BEDROCK:12, CLOUD:13,
+  BRICKS:14, CRAFTING_TABLE:15, FURNACE:16, CHEST:17, SMOOTH_STONE:18,
+  GLASS:19, IRON_BLOCK:20, LAMP:21
+};
 const BLOCK_NAMES = {};
 BLOCK_NAMES[BLOCK.AIR] = 'Udara'; BLOCK_NAMES[BLOCK.GRASS] = 'Rumput'; BLOCK_NAMES[BLOCK.DIRT] = 'Tanah';
-BLOCK_NAMES[BLOCK.STONE] = 'Batu'; BLOCK_NAMES[BLOCK.WOOD] = 'Kayu'; BLOCK_NAMES[BLOCK.LEAVES] = 'Daun';
+BLOCK_NAMES[BLOCK.STONE] = 'Batu'; BLOCK_NAMES[BLOCK.WOOD] = 'Kayu Gelondongan'; BLOCK_NAMES[BLOCK.LEAVES] = 'Daun';
 BLOCK_NAMES[BLOCK.COAL_ORE] = 'Batu Arang'; BLOCK_NAMES[BLOCK.IRON_ORE] = 'Batu Besi';
 BLOCK_NAMES[BLOCK.COBBLESTONE] = 'Batu Bulat'; BLOCK_NAMES[BLOCK.PLANKS] = 'Papan Kayu';
 BLOCK_NAMES[BLOCK.SAND] = 'Pasir'; BLOCK_NAMES[BLOCK.WATER] = 'Air'; BLOCK_NAMES[BLOCK.BEDROCK] = 'Bedrock';
-BLOCK_NAMES[BLOCK.CLOUD] = 'Awan';
+BLOCK_NAMES[BLOCK.CLOUD] = 'Awan'; BLOCK_NAMES[BLOCK.BRICKS] = 'Bata Batu';
+BLOCK_NAMES[BLOCK.CRAFTING_TABLE] = 'Meja Kerajinan'; BLOCK_NAMES[BLOCK.FURNACE] = 'Tungku';
+BLOCK_NAMES[BLOCK.CHEST] = 'Peti'; BLOCK_NAMES[BLOCK.SMOOTH_STONE] = 'Batu Poles';
+BLOCK_NAMES[BLOCK.GLASS] = 'Kaca'; BLOCK_NAMES[BLOCK.IRON_BLOCK] = 'Blok Besi';
+BLOCK_NAMES[BLOCK.LAMP] = 'Lampu Kristal';
 
-/* item non-blok (hasil crafting) */
-const ITEM = { STICK: 100, AXE: 101, PICKAXE: 102, SHOVEL: 103 };
-const ITEM_NAMES = {};
-ITEM_NAMES[ITEM.STICK] = 'Tongkat';
-ITEM_NAMES[ITEM.AXE] = 'Kapak Kayu';
-ITEM_NAMES[ITEM.PICKAXE] = 'Beliung Batu';
-ITEM_NAMES[ITEM.SHOVEL] = 'Sekop Batu';
+/* Item non-blok. ID >= 100 supaya tidak bentrok dengan ID blok. */
+const ITEM = {
+  STICK:100, COAL:101, CHARCOAL:102, RAW_IRON:103, IRON_INGOT:104, APPLE:105, BAKED_APPLE:106,
+  WOOD_PICKAXE:110, STONE_PICKAXE:111, IRON_PICKAXE:112,
+  WOOD_AXE:113, STONE_AXE:114, IRON_AXE:115,
+  WOOD_SHOVEL:116, STONE_SHOVEL:117, IRON_SHOVEL:118,
+  WOOD_SWORD:119, STONE_SWORD:120, IRON_SWORD:121
+};
+const ITEM_DEFS = {};
+function defItem(id, name, icon, extra) {
+  ITEM_DEFS[id] = Object.assign({ name: name, icon: icon }, extra || {});
+}
+defItem(ITEM.STICK, 'Tongkat', '\uD83E\uDD62');
+defItem(ITEM.COAL, 'Arang Batu', '\u26AB');
+defItem(ITEM.CHARCOAL, 'Arang Kayu', '\u25FC\uFE0F');
+defItem(ITEM.RAW_IRON, 'Bijih Besi', '\uD83E\uDEA8');
+defItem(ITEM.IRON_INGOT, 'Batang Besi', '\uD83D\uDD29');
+defItem(ITEM.APPLE, 'Apel', '\uD83C\uDF4E', { food: { hunger: 18, heal: 4 } });
+defItem(ITEM.BAKED_APPLE, 'Apel Panggang', '\uD83C\uDF4F', { food: { hunger: 32, heal: 8 } });
+
+function defTool(id, name, icon, kind, tier, material, speed, dur) {
+  ITEM_DEFS[id] = { name: name, icon: icon, tool: { kind: kind, tier: tier, material: material, speed: speed, dur: dur } };
+}
+defTool(ITEM.WOOD_PICKAXE, 'Beliung Kayu', '\u26CF\uFE0F', 'pickaxe', 1, 'Kayu', 1.6, 70);
+defTool(ITEM.STONE_PICKAXE, 'Beliung Batu', '\u26CF\uFE0F', 'pickaxe', 2, 'Batu', 2.6, 130);
+defTool(ITEM.IRON_PICKAXE, 'Beliung Besi', '\u26CF\uFE0F', 'pickaxe', 3, 'Besi', 4.2, 220);
+defTool(ITEM.WOOD_AXE, 'Kapak Kayu', '\uD83E\uDE93', 'axe', 1, 'Kayu', 1.7, 70);
+defTool(ITEM.STONE_AXE, 'Kapak Batu', '\uD83E\uDE93', 'axe', 2, 'Batu', 2.7, 130);
+defTool(ITEM.IRON_AXE, 'Kapak Besi', '\uD83E\uDE93', 'axe', 3, 'Besi', 4.3, 220);
+defTool(ITEM.WOOD_SHOVEL, 'Sekop Kayu', '\uD83E\uDD44', 'shovel', 1, 'Kayu', 1.7, 70);
+defTool(ITEM.STONE_SHOVEL, 'Sekop Batu', '\uD83E\uDD44', 'shovel', 2, 'Batu', 2.7, 130);
+defTool(ITEM.IRON_SHOVEL, 'Sekop Besi', '\uD83E\uDD44', 'shovel', 3, 'Besi', 4.3, 220);
+defTool(ITEM.WOOD_SWORD, 'Pedang Kayu', '\uD83D\uDDE1\uFE0F', 'sword', 1, 'Kayu', 1.8, 80);
+defTool(ITEM.STONE_SWORD, 'Pedang Batu', '\uD83D\uDDE1\uFE0F', 'sword', 2, 'Batu', 2.8, 140);
+defTool(ITEM.IRON_SWORD, 'Pedang Besi', '\uD83D\uDDE1\uFE0F', 'sword', 3, 'Besi', 4.4, 230);
+
 function isBlockItem(t) { return t > 0 && t < 100; }
-function isTool(t) { return t >= ITEM.AXE && t <= ITEM.SHOVEL; }
-function itemName(t) { return isBlockItem(t) ? (BLOCK_NAMES[t] || 'Barang') : (ITEM_NAMES[t] || 'Barang'); }
+function isTool(t) { return !!(ITEM_DEFS[t] && ITEM_DEFS[t].tool); }
+function isFood(t) { return !!(ITEM_DEFS[t] && ITEM_DEFS[t].food); }
+function toolInfo(t) { return ITEM_DEFS[t] ? ITEM_DEFS[t].tool : null; }
+function itemName(t) { return isBlockItem(t) ? (BLOCK_NAMES[t] || 'Barang') : (ITEM_DEFS[t] ? ITEM_DEFS[t].name : 'Barang'); }
 function itemEmoji(t) {
-  if (t === ITEM.STICK) return '\uD83E\uDD62';
-  if (t === ITEM.AXE) return '\uD83E\uDE93';
-  if (t === ITEM.PICKAXE) return '\u26CF\uFE0F';
-  if (t === ITEM.SHOVEL) return '\uD83E\uDD44';
-  return blockEmoji(t);
+  if (isBlockItem(t)) return blockEmoji(t);
+  return ITEM_DEFS[t] ? ITEM_DEFS[t].icon : '\u2753';
 }
 
-/* tile atlas: 0 rumput atas, 1 rumput samping, 2 tanah, 3 batu, 4 kayu samping,
-   5 kayu atas, 6 daun, 7 arang, 8 besi, 9 bata, 10 papan, 11 pasir, 12 bedrock,
-   13 kulit tangan, 14 air, 15 awan */
+/* tile atlas 8x8: tile lama 0-15 dipertahankan, tile baru 16+ untuk blok crafting */
 const BLOCK_TILES = {};
 BLOCK_TILES[BLOCK.GRASS]      = [1,1,0,2,1,1];
 BLOCK_TILES[BLOCK.DIRT]       = [2,2,2,2,2,2];
@@ -408,14 +772,50 @@ BLOCK_TILES[BLOCK.SAND]       = [11,11,11,11,11,11];
 BLOCK_TILES[BLOCK.WATER]      = [14,14,14,14,14,14];
 BLOCK_TILES[BLOCK.BEDROCK]    = [12,12,12,12,12,12];
 BLOCK_TILES[BLOCK.CLOUD]      = [15,15,15,15,15,15];
+BLOCK_TILES[BLOCK.BRICKS]     = [22,22,22,22,22,22];
+BLOCK_TILES[BLOCK.CRAFTING_TABLE] = [17,17,16,10,17,17];
+BLOCK_TILES[BLOCK.FURNACE]    = [19,19,19,19,18,18];
+BLOCK_TILES[BLOCK.CHEST]      = [21,21,21,21,20,20];
+BLOCK_TILES[BLOCK.SMOOTH_STONE] = [23,23,23,23,23,23];
+BLOCK_TILES[BLOCK.GLASS]      = [24,24,24,24,24,24];
+BLOCK_TILES[BLOCK.IRON_BLOCK] = [25,25,25,25,25,25];
+BLOCK_TILES[BLOCK.LAMP]       = [26,26,26,26,26,26];
 
 const BLOCK_DROP = {};
 BLOCK_DROP[BLOCK.GRASS] = BLOCK.DIRT; BLOCK_DROP[BLOCK.DIRT] = BLOCK.DIRT;
 BLOCK_DROP[BLOCK.STONE] = BLOCK.COBBLESTONE; BLOCK_DROP[BLOCK.WOOD] = BLOCK.WOOD;
-BLOCK_DROP[BLOCK.LEAVES] = null; BLOCK_DROP[BLOCK.COAL_ORE] = BLOCK.COAL_ORE;
-BLOCK_DROP[BLOCK.IRON_ORE] = BLOCK.IRON_ORE; BLOCK_DROP[BLOCK.COBBLESTONE] = BLOCK.COBBLESTONE;
+BLOCK_DROP[BLOCK.LEAVES] = null; BLOCK_DROP[BLOCK.COAL_ORE] = ITEM.COAL;
+BLOCK_DROP[BLOCK.IRON_ORE] = ITEM.RAW_IRON; BLOCK_DROP[BLOCK.COBBLESTONE] = BLOCK.COBBLESTONE;
 BLOCK_DROP[BLOCK.PLANKS] = BLOCK.PLANKS; BLOCK_DROP[BLOCK.SAND] = BLOCK.SAND;
 BLOCK_DROP[BLOCK.WATER] = null; BLOCK_DROP[BLOCK.CLOUD] = null; BLOCK_DROP[BLOCK.BEDROCK] = null;
+BLOCK_DROP[BLOCK.BRICKS] = BLOCK.BRICKS; BLOCK_DROP[BLOCK.CRAFTING_TABLE] = BLOCK.CRAFTING_TABLE;
+BLOCK_DROP[BLOCK.FURNACE] = BLOCK.FURNACE; BLOCK_DROP[BLOCK.CHEST] = BLOCK.CHEST;
+BLOCK_DROP[BLOCK.SMOOTH_STONE] = BLOCK.SMOOTH_STONE; BLOCK_DROP[BLOCK.GLASS] = BLOCK.GLASS;
+BLOCK_DROP[BLOCK.IRON_BLOCK] = BLOCK.IRON_BLOCK; BLOCK_DROP[BLOCK.LAMP] = BLOCK.LAMP;
+
+/* Kebutuhan alat: kind = alat yang mempercepat, tier = tier minimum untuk blok keras */
+const BLOCK_INFO = {};
+function defBlockInfo(id, tool, tier, hard, needsTool) {
+  BLOCK_INFO[id] = { tool: tool, tier: tier || 0, hard: hard || 1, needsTool: !!needsTool };
+}
+defBlockInfo(BLOCK.GRASS, 'shovel', 0, 0.6, false);
+defBlockInfo(BLOCK.DIRT, 'shovel', 0, 0.5, false);
+defBlockInfo(BLOCK.SAND, 'shovel', 0, 0.5, false);
+defBlockInfo(BLOCK.WOOD, 'axe', 0, 1.5, false);
+defBlockInfo(BLOCK.LEAVES, 'sword', 0, 0.4, false);
+defBlockInfo(BLOCK.PLANKS, 'axe', 0, 1.2, false);
+defBlockInfo(BLOCK.CHEST, 'axe', 0, 1.3, false);
+defBlockInfo(BLOCK.CRAFTING_TABLE, 'axe', 0, 1.3, false);
+defBlockInfo(BLOCK.STONE, 'pickaxe', 1, 1.6, true);
+defBlockInfo(BLOCK.COBBLESTONE, 'pickaxe', 1, 1.5, true);
+defBlockInfo(BLOCK.COAL_ORE, 'pickaxe', 1, 1.8, true);
+defBlockInfo(BLOCK.IRON_ORE, 'pickaxe', 2, 2.2, true);
+defBlockInfo(BLOCK.BRICKS, 'pickaxe', 1, 1.6, true);
+defBlockInfo(BLOCK.FURNACE, 'pickaxe', 1, 1.8, true);
+defBlockInfo(BLOCK.SMOOTH_STONE, 'pickaxe', 1, 1.7, true);
+defBlockInfo(BLOCK.GLASS, 'pickaxe', 1, 0.5, true);
+defBlockInfo(BLOCK.IRON_BLOCK, 'pickaxe', 2, 2.5, true);
+defBlockInfo(BLOCK.LAMP, 'pickaxe', 1, 0.9, true);
 
 const blocks = new Uint8Array(WORLD_X * WORLD_Y * WORLD_Z);
 function blockIndex(x, y, z) { return (y * WORLD_Z + z) * WORLD_X + x; }
@@ -430,7 +830,7 @@ function isSolid(x, y, z) {
 }
 function isOpaque(x, y, z) {
   const b = getBlock(x, y, z);
-  return b !== BLOCK.AIR && b !== BLOCK.WATER && b !== BLOCK.CLOUD;
+  return b !== BLOCK.AIR && b !== BLOCK.WATER && b !== BLOCK.CLOUD && b !== BLOCK.GLASS;
 }
 function isWater(x, y, z) { return getBlock(x, y, z) === BLOCK.WATER; }
 
@@ -538,7 +938,7 @@ function generateWorld() {
 }
 
 /* 5. TEXTURE ATLAS (prosedural, tanpa file eksternal) */
-const ATLAS_TILES = 4, TILE_PX = 32, ATLAS_PX = ATLAS_TILES * TILE_PX;
+const ATLAS_TILES = 8, TILE_PX = 32, ATLAS_PX = ATLAS_TILES * TILE_PX;
 function buildAtlasCanvas() {
   const c = document.createElement('canvas');
   c.width = ATLAS_PX; c.height = ATLAS_PX;
@@ -574,6 +974,73 @@ function buildAtlasCanvas() {
   paint(13, [224, 170, 130], 14);
   paint(14, [52, 110, 190], 20, function (px, py) { return py % 8 === 0 ? [80, 145, 220] : null; });
   paint(15, [246, 249, 252], 10);
+
+  /* 16: atas meja kerajinan, 17: sisi meja */
+  paint(16, [154, 112, 64], 12, function (px, py) {
+    if (px < 3 || py < 3 || px > 28 || py > 28) return [92, 60, 32];
+    if (px % 9 === 0 || py % 9 === 0) return [105, 72, 38];
+    return null;
+  });
+  paint(17, [128, 90, 51], 14, function (px, py) {
+    if (px < 2 || py < 2 || px > 29 || py > 29) return [75, 48, 26];
+    if (py > 21 && (px === 9 || px === 20)) return [62, 62, 70];
+    return null;
+  });
+  /* 18: depan tungku, 19: sisi tungku */
+  paint(18, [120, 120, 120], 18, function (px, py) {
+    if (px > 7 && px < 24 && py > 11 && py < 28) {
+      if (py > 21 && px > 10 && px < 21) return [255, 150 + Math.random() * 70, 35];
+      return [28, 28, 30];
+    }
+    if (px < 2 || py < 2) return [78, 78, 80];
+    return null;
+  });
+  paint(19, [126, 126, 126], 20);
+  /* 20: depan peti, 21: sisi peti */
+  paint(20, [136, 92, 47], 14, function (px, py) {
+    if (px < 2 || py < 2 || px > 29 || py > 29) return [74, 46, 22];
+    if (py === 14 || py === 15) return [67, 45, 25];
+    if (px > 13 && px < 19 && py > 12 && py < 19) return [210, 186, 92];
+    return null;
+  });
+  paint(21, [124, 83, 43], 16, function (px, py) { return (px % 10 === 0 || py % 12 === 0) ? [83, 53, 27] : null; });
+  /* 22: bata batu, 23: batu poles */
+  paint(22, [128, 119, 112], 16, function (px, py) {
+    const row = Math.floor(py / 8);
+    const shift = (row % 2) * 8;
+    if (py % 8 === 0 || (px + shift) % 16 === 0) return [73, 67, 62];
+    return null;
+  });
+  paint(23, [168, 168, 170], 12, function (px, py) { return (px % 16 === 0 || py % 16 === 0) ? [142, 142, 146] : null; });
+  /* 24: kaca transparan */
+  (function paintGlass() {
+    const o = tileOrigin(24);
+    g.clearRect(o.x, o.y, TILE_PX, TILE_PX);
+    g.fillStyle = 'rgba(170, 224, 255, 0.30)';
+    g.fillRect(o.x + 1, o.y + 1, TILE_PX - 2, TILE_PX - 2);
+    g.fillStyle = 'rgba(220, 248, 255, 0.75)';
+    g.fillRect(o.x, o.y, TILE_PX, 2);
+    g.fillRect(o.x, o.y, 2, TILE_PX);
+    g.fillRect(o.x, o.y + TILE_PX - 2, TILE_PX, 2);
+    g.fillRect(o.x + TILE_PX - 2, o.y, 2, TILE_PX);
+    g.strokeStyle = 'rgba(255, 255, 255, 0.55)';
+    g.lineWidth = 2;
+    g.beginPath();
+    g.moveTo(o.x + 7, o.y + 24); g.lineTo(o.x + 23, o.y + 8);
+    g.stroke();
+  })();
+  /* 25: blok besi, 26: lampu kristal */
+  paint(25, [176, 178, 184], 12, function (px, py) {
+    if (px < 2 || py < 2 || px > 29 || py > 29) return [112, 116, 124];
+    if (px % 16 === 0 || py % 16 === 0) return [132, 136, 144];
+    return null;
+  });
+  paint(26, [255, 214, 88], 18, function (px, py) {
+    const dx = px - 16, dy = py - 16;
+    if (dx * dx + dy * dy < 34) return [255, 252, 208];
+    if ((px + py) % 9 === 0) return [255, 174, 49];
+    return null;
+  });
   return c;
 }
 
@@ -803,6 +1270,7 @@ function triangulate(positions, uvs, lights) {
 function buildChunk(cx, cz) {
   const positions = [], uvs = [], lights = [];
   const wPositions = [], wUvs = [], wLights = [];
+  const gPositions = [], gUvs = [], gLights = [];
   const x0 = cx * CHUNK, x1 = Math.min(WORLD_X, x0 + CHUNK);
   const z0 = cz * CHUNK, z1 = Math.min(WORLD_Z, z0 + CHUNK);
   for (let x = x0; x < x1; x++) {
@@ -812,14 +1280,21 @@ function buildChunk(cx, cz) {
         if (id === BLOCK.AIR) continue;
         const water = id === BLOCK.WATER;
         const cloud = id === BLOCK.CLOUD;
+        const glass = id === BLOCK.GLASS;
         const seeThrough = water || cloud;
         const tiles = BLOCK_TILES[id];
         for (let f = 0; f < 6; f++) {
           const face = FACE_DEFS[f];
           const nx = x + face.d[0], ny = y + face.d[1], nz = z + face.d[2];
           const nb = getBlock(nx, ny, nz);
-          if (seeThrough) { if (nb !== BLOCK.AIR) continue; }
-          else { if (nb !== BLOCK.AIR && nb !== BLOCK.WATER && nb !== BLOCK.CLOUD) continue; }
+          if (glass) {
+            if (nb === BLOCK.GLASS) continue;
+            if (nb !== BLOCK.AIR && nb !== BLOCK.WATER && nb !== BLOCK.CLOUD) continue;
+          } else if (seeThrough) {
+            if (nb !== BLOCK.AIR && nb !== BLOCK.GLASS) continue;
+          } else {
+            if (nb !== BLOCK.AIR && nb !== BLOCK.WATER && nb !== BLOCK.CLOUD && nb !== BLOCK.GLASS) continue;
+          }
           const tile = tiles[f];
           const col = tile % ATLAS_TILES, row = Math.floor(tile / ATLAS_TILES);
           const u0 = col / ATLAS_TILES + 0.0004, v0 = (ATLAS_TILES - 1 - row) / ATLAS_TILES + 0.0004;
@@ -831,6 +1306,8 @@ function buildChunk(cx, cz) {
               light = face.shade * 0.95;
             } else if (cloud) {
               light = 1.0;
+            } else if (glass) {
+              light = face.shade * 0.98;
             } else {
               const s1 = 2 * (c[0] * face.t1[0] + c[1] * face.t1[1] + c[2] * face.t1[2]) - 1;
               const s2 = 2 * (c[0] * face.t2[0] + c[1] * face.t2[1] + c[2] * face.t2[2]) - 1;
@@ -844,10 +1321,10 @@ function buildChunk(cx, cz) {
               const ao = (side1 && side2) ? 0 : (3 - side1 - side2 - corner);
               light = face.shade * (0.62 + 0.127 * ao);
             }
-            const target = water ? wPositions : positions;
+            const target = water ? wPositions : (glass ? gPositions : positions);
             target.push(x + c[0], y + c[1], z + c[2]);
-            (water ? wUvs : uvs).push(u0 + UV_OFFSETS[i][0] * du, v0 + UV_OFFSETS[i][1] * du);
-            (water ? wLights : lights).push(light);
+            (water ? wUvs : (glass ? gUvs : uvs)).push(u0 + UV_OFFSETS[i][0] * du, v0 + UV_OFFSETS[i][1] * du);
+            (water ? wLights : (glass ? gLights : lights)).push(light);
           }
         }
       }
@@ -855,10 +1332,15 @@ function buildChunk(cx, cz) {
   }
   const data = triangulate(positions, uvs, lights);
   const wData = triangulate(wPositions, wUvs, wLights);
+  const gData = triangulate(gPositions, gUvs, gLights);
   const key = chunkKey(cx, cz);
   let mesh = chunkMeshes[key];
   if (!mesh) {
-    mesh = chunkMeshes[key] = { buffer: gl.createBuffer(), count: 0, waterBuffer: gl.createBuffer(), waterCount: 0 };
+    mesh = chunkMeshes[key] = {
+      buffer: gl.createBuffer(), count: 0,
+      waterBuffer: gl.createBuffer(), waterCount: 0,
+      glassBuffer: gl.createBuffer(), glassCount: 0
+    };
   }
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.buffer);
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
@@ -866,6 +1348,9 @@ function buildChunk(cx, cz) {
   gl.bindBuffer(gl.ARRAY_BUFFER, mesh.waterBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, wData, gl.STATIC_DRAW);
   mesh.waterCount = wData.length / 6;
+  gl.bindBuffer(gl.ARRAY_BUFFER, mesh.glassBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, gData, gl.STATIC_DRAW);
+  mesh.glassCount = gData.length / 6;
 }
 
 function buildAllChunks() {
@@ -917,10 +1402,12 @@ function buildHandMesh(itemType) {
   } else if (itemType === ITEM.STICK) {
     addBox(positions, uvs, lights, -0.03, 0.44, -0.03, 0.06, 0.42, 0.06, 4, 0.95);
   } else if (isTool(itemType)) {
+    const ti = toolInfo(itemType);
     addBox(positions, uvs, lights, -0.03, 0.44, -0.03, 0.06, 0.44, 0.06, 4, 0.95);
-    const headTile = (itemType === ITEM.AXE) ? 10 : 3;
-    if (itemType === ITEM.AXE) addBox(positions, uvs, lights, -0.15, 0.76, -0.05, 0.22, 0.16, 0.1, headTile, 0.95);
-    else if (itemType === ITEM.PICKAXE) addBox(positions, uvs, lights, -0.19, 0.78, -0.04, 0.38, 0.08, 0.08, headTile, 0.95);
+    const headTile = ti.tier >= 3 ? 25 : (ti.tier === 2 ? 3 : 10);
+    if (ti.kind === 'axe') addBox(positions, uvs, lights, -0.15, 0.76, -0.05, 0.22, 0.16, 0.1, headTile, 0.95);
+    else if (ti.kind === 'pickaxe') addBox(positions, uvs, lights, -0.19, 0.78, -0.04, 0.38, 0.08, 0.08, headTile, 0.95);
+    else if (ti.kind === 'sword') addBox(positions, uvs, lights, -0.04, 0.66, -0.02, 0.08, 0.52, 0.04, headTile, 1.05);
     else addBox(positions, uvs, lights, -0.11, 0.76, -0.05, 0.22, 0.08, 0.12, headTile, 0.95);
   }
   const data = triangulate(positions, uvs, lights);
@@ -1052,7 +1539,7 @@ function drawSun(vp, eye, fwd) {
 }
 
 /* 8. PLAYER, PHYSICS & INTERACTION */
-const INV_SIZE = 9;
+const INV_SIZE = 36, HOTBAR_SIZE = 9;
 const player = {
   x: WORLD_X / 2 + 0.5, y: 30, z: WORLD_Z / 2 + 0.5,
   vx: 0, vy: 0, vz: 0, yaw: 0, pitch: 0,
@@ -1060,7 +1547,7 @@ const player = {
   walkPhase: 0, moving: false, swingT: 0,
   health: 100, maxHealth: 100, hunger: 100, maxHunger: 100,
   score: 0, blocksMined: 0, selected: 0, inv: {}, lastMine: 0, lastPlace: 0,
-  name: 'Pemain', dead: false
+  name: 'Pemain', dead: false, mode: 'survival', creative: false, flying: false
 };
 function findSpawn() {
   const cx = Math.floor(WORLD_X / 2), cz = Math.floor(WORLD_Z / 2);
@@ -1094,19 +1581,45 @@ function resetPlayer() {
   player.yaw = 0; player.pitch = 0;
   player.onGround = false; player.fallDist = 0;
   player.inWater = false; player.walkPhase = 0; player.moving = false; player.swingT = 0;
-  player.health = 100; player.hunger = 100;
+  player.mode = gameMode;
+  player.creative = gameMode === 'creative';
+  player.flying = false;
+  screenShake = 0;
+  player.health = 100;
+  player.hunger = gameMode === 'challenge' ? 70 : 100;
   player.score = 0; player.blocksMined = 0; player.selected = 0;
   player.dead = false;
+  player.lastMine = 0; player.lastPlace = 0;
+  mouseBreak = false;
+  virtualLeft = virtualRight = virtualForward = virtualBack = false;
+  mobileJump = mobileDown = mobileSprint = false;
   player.inv = {};
   for (let i = 0; i < INV_SIZE; i++) player.inv[i] = { type: BLOCK.AIR, qty: 0 };
+  document.body.classList.toggle('creative', player.creative);
+  document.body.classList.remove('flying');
+  const flyBtn = document.getElementById('flyBtn');
+  if (flyBtn) { flyBtn.classList.remove('active'); flyBtn.textContent = '✈ Terbang'; }
+  const runBtn = document.getElementById('runBtn');
+  if (runBtn) { runBtn.classList.remove('active'); runBtn.textContent = '🏃 Lari'; }
+  if (player.creative) {
+    const kit = [BLOCK.GRASS, BLOCK.DIRT, BLOCK.STONE, BLOCK.COBBLESTONE, BLOCK.PLANKS, BLOCK.WOOD, BLOCK.SAND, BLOCK.GLASS, BLOCK.BRICKS];
+    kit.forEach(function (b) { addItem(b, 64); });
+  }
 }
 function addItem(type, qty) {
   const n = qty === undefined ? 1 : qty;
+  if (isTool(type)) return addTool(type);
   for (let i = 0; i < INV_SIZE; i++) {
-    if (player.inv[i].type === type && player.inv[i].qty > 0) { player.inv[i].qty += n; return true; }
+    if (player.inv[i].type === type && player.inv[i].qty > 0) {
+      player.inv[i].qty = Math.min(999, player.inv[i].qty + n);
+      return true;
+    }
   }
   for (let i = 0; i < INV_SIZE; i++) {
-    if (player.inv[i].type === BLOCK.AIR || player.inv[i].qty <= 0) { player.inv[i] = { type: type, qty: n }; return true; }
+    if (player.inv[i].type === BLOCK.AIR || player.inv[i].qty <= 0) {
+      player.inv[i] = { type: type, qty: n };
+      return true;
+    }
   }
   return false;
 }
@@ -1118,11 +1631,12 @@ function selectedItemType() {
   const s = player.inv[player.selected];
   return s ? s.type : BLOCK.AIR;
 }
-function addTool(type, dur) {
+function addTool(type) {
+  const ti = toolInfo(type);
   for (let i = 0; i < INV_SIZE; i++) {
     const s = player.inv[i];
     if (s.type === BLOCK.AIR || s.qty <= 0) {
-      player.inv[i] = { type: type, qty: 1, dur: dur || 80 };
+      player.inv[i] = { type: type, qty: 1, dur: ti ? ti.dur : 70, maxDur: ti ? ti.dur : 70 };
       return true;
     }
   }
@@ -1140,16 +1654,18 @@ function removeItem(type, n) {
     const take = Math.min(s.qty, n);
     s.qty -= take;
     n -= take;
-    if (s.qty <= 0) { s.type = BLOCK.AIR; s.qty = 0; delete s.dur; }
+    if (s.qty <= 0) { s.type = BLOCK.AIR; s.qty = 0; delete s.dur; delete s.maxDur; }
   }
 }
 function useToolDurability() {
+  if (player.creative) return;
   const s = player.inv[player.selected];
   if (!s || !isTool(s.type)) return;
-  s.dur = (s.dur === undefined ? 80 : s.dur) - 1;
+  const ti = toolInfo(s.type);
+  s.dur = (s.dur === undefined ? (ti ? ti.dur : 70) : s.dur) - 1;
   if (s.dur <= 0) {
     showToast(itemName(s.type) + ' rusak!');
-    s.type = BLOCK.AIR; s.qty = 0; delete s.dur;
+    s.type = BLOCK.AIR; s.qty = 0; delete s.dur; delete s.maxDur;
   }
   renderHotbar();
 }
@@ -1162,29 +1678,111 @@ function consumeSelected() {
   }
   return false;
 }
+function useSelected() {
+  if (gameState !== STATE.PLAYING) return;
+  const type = selectedItemType();
+  if (!isFood(type)) {
+    showToast('Pilih makanan di hotbar (contoh: Apel), lalu tekan F / tombol 🍎.');
+    return;
+  }
+  if (player.hunger >= player.maxHunger && player.health >= player.maxHealth) {
+    showToast('Kamu masih kenyang.');
+    return;
+  }
+  const food = ITEM_DEFS[type].food;
+  const s = player.inv[player.selected];
+  s.qty--;
+  if (s.qty <= 0) { s.type = BLOCK.AIR; s.qty = 0; }
+  player.hunger = Math.min(player.maxHunger, player.hunger + food.hunger);
+  player.health = Math.min(player.maxHealth, player.health + food.heal);
+  sfxEat();
+  showToast(itemName(type) + ': +' + food.hunger + ' lapar, +' + food.heal + ' HP');
+  renderHotbar();
+  renderInventory();
+  updateHUD();
+}
+function creativeGive(type) {
+  addItem(type, 64);
+  renderHotbar();
+  renderInventory();
+  showToast('+64 ' + itemName(type));
+}
 
+/* Resep: out = hasil, in = bahan, station = null/table/furnace, cat = kategori panel */
 const RECIPES = [
-  { out: { type: BLOCK.PLANKS, qty: 4 }, in: [{ type: BLOCK.WOOD, qty: 1 }] },
-  { out: { type: ITEM.STICK, qty: 2 }, in: [{ type: BLOCK.PLANKS, qty: 1 }] },
-  { out: { type: ITEM.AXE, qty: 1, dur: 90 }, in: [{ type: BLOCK.PLANKS, qty: 3 }, { type: ITEM.STICK, qty: 2 }] },
-  { out: { type: ITEM.PICKAXE, qty: 1, dur: 90 }, in: [{ type: BLOCK.COBBLESTONE, qty: 3 }, { type: ITEM.STICK, qty: 2 }] },
-  { out: { type: ITEM.SHOVEL, qty: 1, dur: 70 }, in: [{ type: BLOCK.COBBLESTONE, qty: 1 }, { type: ITEM.STICK, qty: 2 }] }
+  { id:'planks', out:{ type:BLOCK.PLANKS, qty:4 }, in:[{ type:BLOCK.WOOD, qty:1 }], station:null, cat:'wood' },
+  { id:'sticks', out:{ type:ITEM.STICK, qty:4 }, in:[{ type:BLOCK.PLANKS, qty:2 }], station:null, cat:'wood' },
+  { id:'table', out:{ type:BLOCK.CRAFTING_TABLE, qty:1 }, in:[{ type:BLOCK.PLANKS, qty:4 }], station:null, cat:'blocks' },
+  { id:'chest', out:{ type:BLOCK.CHEST, qty:1 }, in:[{ type:BLOCK.PLANKS, qty:8 }], station:'table', cat:'blocks' },
+  { id:'furnace', out:{ type:BLOCK.FURNACE, qty:1 }, in:[{ type:BLOCK.COBBLESTONE, qty:8 }], station:'table', cat:'blocks' },
+  { id:'bricks', out:{ type:BLOCK.BRICKS, qty:4 }, in:[{ type:BLOCK.SMOOTH_STONE, qty:4 }], station:'table', cat:'blocks' },
+  { id:'iron_block', out:{ type:BLOCK.IRON_BLOCK, qty:1 }, in:[{ type:ITEM.IRON_INGOT, qty:9 }], station:'table', cat:'blocks' },
+  { id:'lamp', out:{ type:BLOCK.LAMP, qty:2 }, in:[{ type:ITEM.COAL, qty:4 }, { type:BLOCK.SMOOTH_STONE, qty:1 }], station:'table', cat:'blocks' },
+  { id:'lamp_charcoal', out:{ type:BLOCK.LAMP, qty:2 }, in:[{ type:ITEM.CHARCOAL, qty:4 }, { type:BLOCK.SMOOTH_STONE, qty:1 }], station:'table', cat:'blocks' },
+
+  { id:'w_pick', out:{ type:ITEM.WOOD_PICKAXE, qty:1 }, in:[{ type:BLOCK.PLANKS, qty:3 }, { type:ITEM.STICK, qty:2 }], station:'table', cat:'tools' },
+  { id:'w_axe', out:{ type:ITEM.WOOD_AXE, qty:1 }, in:[{ type:BLOCK.PLANKS, qty:3 }, { type:ITEM.STICK, qty:2 }], station:'table', cat:'tools' },
+  { id:'w_shovel', out:{ type:ITEM.WOOD_SHOVEL, qty:1 }, in:[{ type:BLOCK.PLANKS, qty:1 }, { type:ITEM.STICK, qty:2 }], station:'table', cat:'tools' },
+  { id:'w_sword', out:{ type:ITEM.WOOD_SWORD, qty:1 }, in:[{ type:BLOCK.PLANKS, qty:2 }, { type:ITEM.STICK, qty:1 }], station:'table', cat:'tools' },
+  { id:'s_pick', out:{ type:ITEM.STONE_PICKAXE, qty:1 }, in:[{ type:BLOCK.COBBLESTONE, qty:3 }, { type:ITEM.STICK, qty:2 }], station:'table', cat:'tools' },
+  { id:'s_axe', out:{ type:ITEM.STONE_AXE, qty:1 }, in:[{ type:BLOCK.COBBLESTONE, qty:3 }, { type:ITEM.STICK, qty:2 }], station:'table', cat:'tools' },
+  { id:'s_shovel', out:{ type:ITEM.STONE_SHOVEL, qty:1 }, in:[{ type:BLOCK.COBBLESTONE, qty:1 }, { type:ITEM.STICK, qty:2 }], station:'table', cat:'tools' },
+  { id:'s_sword', out:{ type:ITEM.STONE_SWORD, qty:1 }, in:[{ type:BLOCK.COBBLESTONE, qty:2 }, { type:ITEM.STICK, qty:1 }], station:'table', cat:'tools' },
+  { id:'i_pick', out:{ type:ITEM.IRON_PICKAXE, qty:1 }, in:[{ type:ITEM.IRON_INGOT, qty:3 }, { type:ITEM.STICK, qty:2 }], station:'table', cat:'tools' },
+  { id:'i_axe', out:{ type:ITEM.IRON_AXE, qty:1 }, in:[{ type:ITEM.IRON_INGOT, qty:3 }, { type:ITEM.STICK, qty:2 }], station:'table', cat:'tools' },
+  { id:'i_shovel', out:{ type:ITEM.IRON_SHOVEL, qty:1 }, in:[{ type:ITEM.IRON_INGOT, qty:1 }, { type:ITEM.STICK, qty:2 }], station:'table', cat:'tools' },
+  { id:'i_sword', out:{ type:ITEM.IRON_SWORD, qty:1 }, in:[{ type:ITEM.IRON_INGOT, qty:2 }, { type:ITEM.STICK, qty:1 }], station:'table', cat:'tools' },
+
+  { id:'charcoal', out:{ type:ITEM.CHARCOAL, qty:2 }, in:[{ type:BLOCK.WOOD, qty:1 }, { type:BLOCK.PLANKS, qty:1 }], station:'furnace', cat:'furnace' },
+  { id:'smooth', out:{ type:BLOCK.SMOOTH_STONE, qty:1 }, in:[{ type:BLOCK.COBBLESTONE, qty:1 }, { type:BLOCK.PLANKS, qty:1 }], station:'furnace', cat:'furnace' },
+  { id:'glass', out:{ type:BLOCK.GLASS, qty:1 }, in:[{ type:BLOCK.SAND, qty:2 }, { type:BLOCK.PLANKS, qty:1 }], station:'furnace', cat:'furnace' },
+  { id:'iron', out:{ type:ITEM.IRON_INGOT, qty:1 }, in:[{ type:ITEM.RAW_IRON, qty:1 }, { type:BLOCK.PLANKS, qty:1 }], station:'furnace', cat:'furnace' },
+  { id:'baked_apple', out:{ type:ITEM.BAKED_APPLE, qty:1 }, in:[{ type:ITEM.APPLE, qty:1 }, { type:BLOCK.PLANKS, qty:1 }], station:'furnace', cat:'food' }
 ];
-function canCraft(r) {
-  return r.in.every(function (g) { return countItem(g.type) >= g.qty; });
+
+function nearbyStations() {
+  const res = { table:false, furnace:false };
+  if (gameMode === 'creative') { res.table = res.furnace = true; return res; }
+  const px = Math.floor(player.x), py = Math.floor(player.y), pz = Math.floor(player.z);
+  for (let dx = -4; dx <= 4; dx++) {
+    for (let dy = -3; dy <= 3; dy++) {
+      for (let dz = -4; dz <= 4; dz++) {
+        const b = getBlock(px + dx, py + dy, pz + dz);
+        if (b === BLOCK.CRAFTING_TABLE) res.table = true;
+        else if (b === BLOCK.FURNACE) res.furnace = true;
+      }
+    }
+  }
+  return res;
+}
+function stationOk(r, stations) {
+  if (!r.station) return true;
+  if (r.station === 'table') return !!stations.table;
+  if (r.station === 'furnace') return !!stations.furnace;
+  return true;
+}
+function canCraft(r, stations) {
+  const st = stations || nearbyStations();
+  return stationOk(r, st) && r.in.every(function (g) { return countItem(g.type) >= g.qty; });
 }
 function craftRecipe(index) {
   const r = RECIPES[index];
-  if (!r || !canCraft(r)) { showToast('Bahan kurang'); return; }
+  if (!r) return;
+  const stations = nearbyStations();
+  if (!stationOk(r, stations)) {
+    showToast(r.station === 'table' ? 'Butuh Meja Kerajinan di dekatmu!' : 'Butuh Tungku di dekatmu!');
+    return;
+  }
+  if (!r.in.every(function (g) { return countItem(g.type) >= g.qty; })) { showToast('Bahan kurang'); return; }
   r.in.forEach(function (g) { removeItem(g.type, g.qty); });
   let ok;
-  if (r.out.dur) ok = addTool(r.out.type, r.out.dur);
+  if (isTool(r.out.type)) ok = addTool(r.out.type);
   else ok = addItem(r.out.type, r.out.qty);
   if (!ok) { showToast('Inventori penuh!'); }
   else {
     showToast('Berhasil membuat ' + itemName(r.out.type) + ' x' + r.out.qty);
     sfxPlace();
-    player.score += 5;
+    addScore(5);
   }
   renderHotbar();
   renderCrafting();
@@ -1216,9 +1814,11 @@ function movePlayer(dt) {
   const fwd = (keys['w'] || keys['arrowup'] || virtualForward ? 1 : 0) - (keys['s'] || keys['arrowdown'] || virtualBack ? 1 : 0);
   const side = (keys['d'] || keys['arrowright'] || virtualRight ? 1 : 0) - (keys['a'] || keys['arrowleft'] || virtualLeft ? 1 : 0);
   const inWater = playerInWater();
+  const sprinting = keys['shift'] || mobileSprint;
   p.inWater = inWater;
-  let speed = keys['shift'] ? SPRINT_SPEED : WALK_SPEED;
-  if (inWater) speed *= 0.55;
+  let speed = sprinting ? SPRINT_SPEED : WALK_SPEED;
+  if (p.flying) speed = SPRINT_SPEED * 1.35;
+  else if (inWater) speed *= 0.55;
   let mx = 0, mz = 0;
   if (fwd !== 0 || side !== 0) {
     const sin = Math.sin(p.yaw), cos = Math.cos(p.yaw);
@@ -1229,15 +1829,22 @@ function movePlayer(dt) {
     mz = mz / len * speed;
   }
   p.vx = mx; p.vz = mz;
-  const jumpHeld = keys[' '] || keys['spacebar'];
-  if (jumpHeld) {
-    if (inWater) { p.vy = 4.2; p.fallDist = 0; }
-    else if (p.onGround) { p.vy = JUMP_V; p.onGround = false; sfxJump(); }
+  const jumpHeld = keys[' '] || keys['spacebar'] || mobileJump;
+  const downHeld = keys['shift'] || mobileDown;
+  if (p.flying) {
+    p.vy = (jumpHeld ? 5.4 : 0) - (downHeld ? 5.4 : 0);
+    p.fallDist = 0;
+    p.onGround = false;
+  } else {
+    if (jumpHeld) {
+      if (inWater) { p.vy = 4.2; p.fallDist = 0; }
+      else if (p.onGround) { p.vy = JUMP_V; p.onGround = false; sfxJump(); }
+    }
+    p.vy -= GRAVITY * (inWater ? 0.22 : 1) * dt;
+    if (inWater && p.vy < -6) p.vy = -6;
+    if (!inWater && p.vy < -30) p.vy = -30;
+    if (inWater) p.fallDist = 0;
   }
-  p.vy -= GRAVITY * (inWater ? 0.22 : 1) * dt;
-  if (inWater && p.vy < -6) p.vy = -6;
-  if (!inWater && p.vy < -30) p.vy = -30;
-  if (inWater) p.fallDist = 0;
 
   const nx = p.x + p.vx * dt;
   if (!playerCollides(nx, p.y, p.z)) p.x = nx; else p.vx = 0;
@@ -1250,7 +1857,7 @@ function movePlayer(dt) {
       p.y = Math.floor(ny) + 1;
       let guard = 0;
       while (playerCollides(p.x, p.y, p.z) && guard++ < 8) p.y += 1;
-      if (p.fallDist > 3.5 && !inWater) {
+      if (p.fallDist > 3.5 && !inWater && !p.creative) {
         const dmg = Math.round((p.fallDist - 3.5) * 5);
         if (dmg > 0) { p.health = Math.max(0, p.health - dmg); shake(10, 12); sfxHurt(); }
       }
@@ -1260,12 +1867,12 @@ function movePlayer(dt) {
     p.vy = 0;
   } else {
     p.y = ny;
-    if (p.vy < 0) { p.fallDist += -p.vy * dt; p.onGround = false; }
+    if (p.vy < 0 && !p.flying) { p.fallDist += -p.vy * dt; p.onGround = false; }
   }
-  if (!p.onGround && p.vy < 0) p.onGround = false;
+  if (!p.onGround && p.vy < 0 && !p.flying) p.onGround = false;
 
   if (fwd !== 0 || side !== 0) {
-    if (p.onGround || inWater) p.walkPhase += dt * (keys['shift'] ? 11 : 8);
+    if (p.onGround || inWater || p.flying) p.walkPhase += dt * (sprinting ? 11 : 8);
   } else {
     p.walkPhase += dt * 1.5;
   }
@@ -1315,7 +1922,8 @@ function blockTouchesPlayer(bx, by, bz) {
 
 const SWING_DUR = 0.28;
 
-/* Menebang pohon: seluruh batang kayu yang tersambung tumbang, daun di sekitarnya ikut hilang */
+/* Menebang pohon: seluruh batang kayu yang tersambung tumbang, daun ikut hilang.
+   Pohon juga menjatuhkan apel supaya pemain punya sumber makanan sejak awal. */
 function fellTree(sx, sy, sz) {
   const visited = {};
   const queue = [[sx, sy, sz]];
@@ -1332,8 +1940,9 @@ function fellTree(sx, sy, sz) {
     wood.push([x, y, z]);
     queue.push([x + 1, y, z], [x - 1, y, z], [x, y + 1, z], [x, y - 1, z], [x, y, z + 1], [x, y, z - 1]);
   }
-  if (wood.length < 2) return 0;
+  if (wood.length < 2) return null;
   const dirty = {};
+  let leaves = 0;
   function clear(x, y, z) {
     if (!inBounds(x, y, z)) return;
     blocks[blockIndex(x, y, z)] = BLOCK.AIR;
@@ -1345,7 +1954,10 @@ function fellTree(sx, sy, sz) {
     for (let dx = -2; dx <= 2; dx++) {
       for (let dy = -2; dy <= 2; dy++) {
         for (let dz = -2; dz <= 2; dz++) {
-          if (getBlock(c[0] + dx, c[1] + dy, c[2] + dz) === BLOCK.LEAVES) clear(c[0] + dx, c[1] + dy, c[2] + dz);
+          if (getBlock(c[0] + dx, c[1] + dy, c[2] + dz) === BLOCK.LEAVES) {
+            clear(c[0] + dx, c[1] + dy, c[2] + dz);
+            leaves++;
+          }
         }
       }
     }
@@ -1364,7 +1976,8 @@ function fellTree(sx, sy, sz) {
       }
     }
   });
-  return wood.length;
+  const apples = Math.min(5, 1 + Math.floor(leaves / 12) + (Math.random() < 0.55 ? 1 : 0));
+  return { wood: wood.length, apples: apples, leaves: leaves };
 }
 
 function breakBlock() {
@@ -1376,32 +1989,61 @@ function breakBlock() {
   const t = getBlock(hit.x, hit.y, hit.z);
   if (t === BLOCK.AIR) return;
   const held = selectedItemType();
-  let cooldown = 220, toolUsed = false;
-  if (t === BLOCK.WOOD && held === ITEM.AXE) { cooldown = 90; toolUsed = true; }
-  else if ((t === BLOCK.STONE || t === BLOCK.COAL_ORE || t === BLOCK.IRON_ORE || t === BLOCK.COBBLESTONE) && held === ITEM.PICKAXE) { cooldown = 90; toolUsed = true; }
-  else if ((t === BLOCK.DIRT || t === BLOCK.GRASS || t === BLOCK.SAND) && held === ITEM.SHOVEL) { cooldown = 90; toolUsed = true; }
+  const ti = toolInfo(held);
+  const info = BLOCK_INFO[t] || { tool:'', tier:0, hard:1, needsTool:false };
+  if (!player.creative && info.needsTool) {
+    if (!ti || ti.kind !== info.tool) {
+      if (now - lastModeToast > 900) {
+        showToast('Butuh ' + (info.tool === 'pickaxe' ? 'Beliung' : info.tool === 'axe' ? 'Kapak' : 'alat yang tepat') + ' untuk menambang ini.');
+        lastModeToast = now;
+      }
+      return;
+    }
+    if (ti.tier < info.tier) {
+      if (now - lastModeToast > 900) {
+        showToast('Alat terlalu lemah. Butuh ' + (info.tier >= 3 ? 'Beliung Besi' : 'Beliung Batu') + '.');
+        lastModeToast = now;
+      }
+      return;
+    }
+  }
+  let cooldown, toolUsed = false;
+  if (player.creative) {
+    cooldown = 55;
+  } else if (ti && ti.kind === info.tool) {
+    cooldown = Math.max(80, Math.round(360 * info.hard / ti.speed));
+    toolUsed = true;
+  } else {
+    cooldown = Math.max(180, Math.round(520 * info.hard));
+  }
   if (now - player.lastMine < cooldown) return;
   player.lastMine = now;
   player.swingT = SWING_DUR;
   if (toolUsed) useToolDurability();
+
   if (t === BLOCK.WOOD) {
-    const n = fellTree(hit.x, hit.y, hit.z);
-    if (n > 0) {
-      addItem(BLOCK.WOOD, n);
-      player.blocksMined += n;
-      player.score += 15 * n;
+    const result = fellTree(hit.x, hit.y, hit.z);
+    if (result && result.wood > 0) {
+      addItem(BLOCK.WOOD, result.wood);
+      if (result.apples > 0) addItem(ITEM.APPLE, result.apples);
+      player.blocksMined += result.wood;
+      addScore(15 * result.wood);
       sfxMine();
       shake(8, 10);
-      showToast('Pohon tumbang! +' + n + ' kayu');
+      showToast('Pohon tumbang! +' + result.wood + ' kayu' + (result.apples ? ', +' + result.apples + ' apel' : ''));
       renderHotbar();
       return;
     }
   }
   updateBlock(hit.x, hit.y, hit.z, BLOCK.AIR);
   const drop = BLOCK_DROP[t];
-  if (drop) { addItem(drop, 1); }
+  if (drop) addItem(drop, 1);
+  if (t === BLOCK.LEAVES) {
+    if (Math.random() < 0.35) addItem(ITEM.APPLE, 1);
+    if (Math.random() < 0.40) addItem(ITEM.STICK, 1);
+  }
   player.blocksMined++;
-  player.score += 10;
+  addScore(10);
   sfxMine();
   shake(4, 6);
   renderHotbar();
@@ -1409,7 +2051,7 @@ function breakBlock() {
 function placeBlock() {
   if (gameState !== STATE.PLAYING) return;
   const now = Date.now();
-  if (now - player.lastPlace < 200) return;
+  if (now - player.lastPlace < (player.creative ? 90 : 200)) return;
   player.lastPlace = now;
   const hit = raycast(REACH);
   if (!hit) return;
@@ -1419,9 +2061,9 @@ function placeBlock() {
   const st = selectedType();
   if (st === BLOCK.AIR) { showToast(isTool(selectedItemType()) ? 'Pegang blok untuk menaruh' : 'Pilih blok dulu'); return; }
   if (blockTouchesPlayer(x, y, z)) { showToast('Tidak bisa menaruh di badan sendiri'); return; }
-  if (!consumeSelected()) { showToast('Slot kosong'); return; }
+  if (!player.creative && !consumeSelected()) { showToast('Slot kosong'); return; }
   updateBlock(x, y, z, st);
-  player.score += 5;
+  if (!player.creative) addScore(5);
   player.swingT = SWING_DUR;
   sfxPlace();
   renderHotbar();
@@ -1434,57 +2076,110 @@ function sanitize(str) { return String(str).replace(/[<>&"']/g, '').trim().slice
 function getLastUsername() { try { return localStorage.getItem(LS_USER) || ''; } catch (e) { return ''; } }
 function saveLastUsername(name) { try { localStorage.setItem(LS_USER, sanitize(name)); } catch (e) {} }
 function getLeaderboard() {
-  try { const raw = localStorage.getItem(LS_BOARD); return raw ? JSON.parse(raw) : []; } catch (e) { return []; }
+  try {
+    const raw = localStorage.getItem(LS_BOARD);
+    if (!raw) return [];
+    const arr = JSON.parse(raw);
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
 }
 function saveLeaderboard(arr) { try { localStorage.setItem(LS_BOARD, JSON.stringify(arr)); } catch (e) {} }
 function formatTime(s) {
   const m = Math.floor(s / 60), sec = Math.floor(s % 60);
   return String(m).padStart(2, '0') + ':' + String(sec).padStart(2, '0');
 }
-function addLeaderboardEntry(username, score, timeSec) {
+function addLeaderboardEntry(username, score, timeSec, mode) {
+  const m = mode || gameMode;
+  if (m === 'creative') return;
   const board = getLeaderboard();
   const now = new Date();
   board.push({
     id: 'run_' + Date.now(), username: sanitize(username), score: score,
-    time: formatTime(timeSec), timestamp: now.getTime(),
+    mode: m, time: formatTime(timeSec), timestamp: now.getTime(),
     date: now.toLocaleDateString('id-ID') + ' ' + now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
   });
   board.sort(function (a, b) { return b.score - a.score; });
-  saveLeaderboard(board.slice(0, 10));
+  const kept = [], counts = { survival: 0, challenge: 0 };
+  board.forEach(function (e) {
+    const m = e.mode || 'survival';
+    if (m === 'creative' || !counts.hasOwnProperty(m)) return;
+    if (counts[m] >= 10) return;
+    counts[m]++;
+    kept.push(e);
+  });
+  saveLeaderboard(kept.slice(0, 20));
   renderLeaderboard();
 }
 function renderLeaderboard() {
-  const board = getLeaderboard();
+  const all = getLeaderboard();
   const tbody = document.getElementById('leaderboard-body');
   tbody.innerHTML = '';
-  board.slice(0, 10).forEach(function (e, i) {
+  const filtered = all.filter(function (e) {
+    const m = e.mode || 'survival';
+    if (m === 'creative') return false;
+    return lbFilter === 'all' || m === lbFilter;
+  }).slice(0, 10);
+  if (!filtered.length) {
     const tr = document.createElement('tr');
-    tr.innerHTML = '<td>' + (i + 1) + '</td><td>' + e.username + '</td><td>' + e.score + '</td><td>' + (e.time || '-') + '</td><td>' + e.date + '</td>';
+    const td = document.createElement('td');
+    td.colSpan = 6;
+    td.style.color = '#999';
+    td.style.textAlign = 'center';
+    td.textContent = 'Belum ada skor. Mainkan mode Bertahan atau Tantangan!';
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+  filtered.forEach(function (e, i) {
+    const tr = document.createElement('tr');
+    const vals = [
+      String(i + 1),
+      e.username,
+      (MODES[e.mode] ? MODES[e.mode].name : 'Bertahan'),
+      String(e.score),
+      e.time || '-',
+      e.date
+    ];
+    vals.forEach(function (v, idx) {
+      const td = document.createElement('td');
+      td.textContent = v;
+      if (idx === 2) td.style.color = '#8fe8ff';
+      tr.appendChild(td);
+    });
     tbody.appendChild(tr);
   });
 }
 
 /* 10. UI, HUD, HOTBAR & INVENTORY */
+const ALL_BLOCK_TYPES = [
+  BLOCK.GRASS, BLOCK.DIRT, BLOCK.STONE, BLOCK.COBBLESTONE, BLOCK.PLANKS,
+  BLOCK.WOOD, BLOCK.SAND, BLOCK.GLASS, BLOCK.BRICKS, BLOCK.CRAFTING_TABLE,
+  BLOCK.FURNACE, BLOCK.CHEST, BLOCK.SMOOTH_STONE, BLOCK.IRON_BLOCK, BLOCK.LAMP, BLOCK.LEAVES
+];
+let craftFilter = 'all';
 function blockEmoji(type) {
   const map = {};
   map[BLOCK.GRASS] = '\uD83C\uDF31'; map[BLOCK.DIRT] = '\uD83D\uDFEB'; map[BLOCK.STONE] = '\uD83E\uDEA8';
   map[BLOCK.WOOD] = '\uD83E\uDEB5'; map[BLOCK.LEAVES] = '\uD83C\uDF43'; map[BLOCK.COAL_ORE] = '\u26AB';
   map[BLOCK.IRON_ORE] = '\uD83D\uDD29'; map[BLOCK.COBBLESTONE] = '\uD83E\uDDF1'; map[BLOCK.PLANKS] = '\uD83E\uDEB5';
   map[BLOCK.SAND] = '\uD83D\uDFE8'; map[BLOCK.WATER] = '\uD83D\uDCA7'; map[BLOCK.BEDROCK] = '\u2B1B';
-  map[BLOCK.CLOUD] = '\u2601\uFE0F';
+  map[BLOCK.CLOUD] = '\u2601\uFE0F'; map[BLOCK.BRICKS] = '\uD83E\uDDF1'; map[BLOCK.CRAFTING_TABLE] = '\uD83D\uDEE0\uFE0F';
+  map[BLOCK.FURNACE] = '\uD83D\uDD25'; map[BLOCK.CHEST] = '\uD83E\uDDF0'; map[BLOCK.SMOOTH_STONE] = '\u2B1C';
+  map[BLOCK.GLASS] = '\uD83D\uDD37'; map[BLOCK.IRON_BLOCK] = '\u2699\uFE0F'; map[BLOCK.LAMP] = '\uD83D\uDCA1';
   return map[type] || '\u2753';
 }
 function renderHotbar() {
   const hotbar = document.getElementById('hotbar');
+  if (!hotbar) return;
   hotbar.innerHTML = '';
-  for (let i = 0; i < INV_SIZE; i++) {
+  for (let i = 0; i < HOTBAR_SIZE; i++) {
     const it = player.inv[i] || { type: BLOCK.AIR, qty: 0 };
     const div = document.createElement('div');
-    div.className = 'slot' + (i === player.selected ? ' active' : '');
-    div.textContent = itemEmoji(it.type);
+    div.className = 'slot' + (i === player.selected ? ' active' : '') + (it.type === BLOCK.AIR ? ' inv-empty' : '');
+    div.textContent = it.type === BLOCK.AIR ? '' : itemEmoji(it.type);
     if (isTool(it.type) && it.dur !== undefined) {
       const span = document.createElement('span');
-      span.className = 'slot-count';
+      span.className = 'slot-dur';
       span.textContent = it.dur;
       div.appendChild(span);
     } else if (it.qty > 1) {
@@ -1496,12 +2191,16 @@ function renderHotbar() {
     div.onclick = function () { selectSlot(i); };
     hotbar.appendChild(div);
   }
+  const label = document.getElementById('itemLabel');
+  if (label) {
+    const type = selectedItemType();
+    label.textContent = type === BLOCK.AIR ? 'Slot kosong' : itemName(type);
+  }
 }
 function selectSlot(i) {
-  if (i < 0 || i >= INV_SIZE) return;
+  if (i < 0 || i >= HOTBAR_SIZE) return;
   player.selected = i;
-  const slots = document.querySelectorAll('#hotbar .slot');
-  for (let k = 0; k < slots.length; k++) slots[k].classList.toggle('active', k === i);
+  renderHotbar();
   renderInventory();
 }
 function renderInventory() {
@@ -1511,8 +2210,15 @@ function renderInventory() {
   for (let i = 0; i < INV_SIZE; i++) {
     const it = player.inv[i] || { type: BLOCK.AIR, qty: 0 };
     const div = document.createElement('div');
-    div.className = 'inv-item' + (i === player.selected ? ' selected' : '');
-    div.textContent = itemEmoji(it.type);
+    div.className = 'inv-item' + (i === player.selected ? ' selected' : '') +
+      (i < HOTBAR_SIZE ? ' hotbar-slot' : '') + (it.type === BLOCK.AIR ? ' inv-empty' : '');
+    div.textContent = it.type === BLOCK.AIR ? '' : itemEmoji(it.type);
+    if (i < HOTBAR_SIZE) {
+      const tag = document.createElement('span');
+      tag.className = 'inv-tag';
+      tag.textContent = String(i + 1);
+      div.appendChild(tag);
+    }
     if (isTool(it.type) && it.dur !== undefined) {
       const span = document.createElement('span');
       span.className = 'inv-qty';
@@ -1524,9 +2230,39 @@ function renderInventory() {
       span.textContent = 'x' + it.qty;
       div.appendChild(span);
     }
-    div.onclick = function () { selectSlot(i); };
+    div.title = it.type === BLOCK.AIR ? 'Slot kosong' : itemName(it.type) + (it.qty > 1 ? ' x' + it.qty : '');
+    div.onclick = (function (idx) {
+      return function () {
+        if (idx < HOTBAR_SIZE) selectSlot(idx);
+        else {
+          const hot = player.selected;
+          const tmp = player.inv[hot];
+          player.inv[hot] = player.inv[idx];
+          player.inv[idx] = tmp;
+          renderHotbar();
+          renderInventory();
+          showToast('Dipindah ke slot hotbar ' + (hot + 1));
+        }
+      };
+    })(i);
     grid.appendChild(div);
   }
+  renderCreativePalette();
+}
+function renderCreativePalette() {
+  const wrap = document.getElementById('creative-wrap');
+  const grid = document.getElementById('creative-palette');
+  if (!wrap || !grid) return;
+  if (!player.creative) { grid.innerHTML = ''; return; }
+  grid.innerHTML = '';
+  ALL_BLOCK_TYPES.forEach(function (type) {
+    const div = document.createElement('div');
+    div.className = 'inv-item';
+    div.textContent = itemEmoji(type);
+    div.title = 'Ambil 64 ' + itemName(type);
+    div.onclick = function () { creativeGive(type); };
+    grid.appendChild(div);
+  });
 }
 function updateHUD() {
   const hpText = document.getElementById('hpText');
@@ -1537,36 +2273,69 @@ function updateHUD() {
   hpFill.style.width = (player.health / player.maxHealth * 100) + '%';
   hungerText.textContent = Math.floor(player.hunger) + '/' + player.maxHunger;
   hungerFill.style.width = (player.hunger / player.maxHunger * 100) + '%';
-  document.getElementById('timerText').textContent = formatTime(timerSec);
+  const mode = MODES[gameMode] || MODES.survival;
+  const badge = document.getElementById('modeBadge');
+  badge.className = 'pill mode-' + gameMode;
+  badge.textContent = mode.icon + ' ' + mode.name;
+  const timerEl = document.getElementById('timerText');
+  if (gameMode === 'challenge') {
+    timerEl.textContent = 'Sisa ' + formatTime(Math.ceil(Math.max(0, MODES.challenge.timeLimit - timerSec)));
+  } else {
+    timerEl.textContent = formatTime(timerSec);
+  }
   document.getElementById('blocksText').textContent = player.blocksMined;
+  document.getElementById('flyState').style.display = player.flying ? 'inline-flex' : 'none';
 }
 function showToast(msg) {
   const el = document.getElementById('toast');
+  if (!el) return;
   el.textContent = msg;
   el.classList.add('show');
-  setTimeout(function () { el.classList.remove('show'); }, 1800);
+  clearTimeout(showToast.timer);
+  showToast.timer = setTimeout(function () { el.classList.remove('show'); }, 1900);
 }
 function toggleInventory() {
   const panel = document.getElementById('inventory-panel');
   const craft = document.getElementById('craft-panel');
   if (panel.classList.contains('active')) {
     panel.classList.remove('active');
-    if (document.pointerLockElement !== canvas) requestLock();
+    document.body.classList.remove('panel-open');
+    if (!IS_TOUCH) requestLock();
   } else {
     craft.classList.remove('active');
     panel.classList.add('active');
+    document.body.classList.add('panel-open');
+    virtualLeft = virtualRight = virtualForward = virtualBack = false;
+    mouseBreak = false; mobileJump = false; mobileDown = false;
     renderInventory();
-    if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
+    if (!IS_TOUCH && document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
   }
 }
 function renderCrafting() {
   const list = document.getElementById('craft-list');
   if (!list) return;
+  const stations = nearbyStations();
+  const status = document.getElementById('station-status');
+  status.innerHTML = '';
+  const tableBadge = document.createElement('span');
+  tableBadge.className = 'station-badge' + (stations.table ? ' ok' : '');
+  tableBadge.textContent = (stations.table ? '🛠 Meja Kerajinan siap' : '🛠 Butuh Meja Kerajinan');
+  const furnaceBadge = document.createElement('span');
+  furnaceBadge.className = 'station-badge' + (stations.furnace ? ' ok' : '');
+  furnaceBadge.textContent = (stations.furnace ? '🔥 Tungku siap' : '🔥 Butuh Tungku');
+  status.appendChild(tableBadge); status.appendChild(furnaceBadge);
+  document.querySelectorAll('#craft-cats .cat-btn').forEach(function (b) {
+    b.classList.toggle('active', b.dataset.cat === craftFilter);
+  });
   list.innerHTML = '';
+  let shown = 0;
   RECIPES.forEach(function (r, index) {
-    const ready = canCraft(r);
+    if (craftFilter !== 'all' && r.cat !== craftFilter) return;
+    shown++;
+    const ready = canCraft(r, stations);
+    const locked = !stationOk(r, stations);
     const box = document.createElement('div');
-    box.className = 'recipe' + (ready ? ' ready' : '');
+    box.className = 'recipe' + (ready ? ' ready' : '') + (locked ? ' locked' : '');
     const head = document.createElement('div');
     head.className = 'recipe-head';
     const icon = document.createElement('span');
@@ -1576,54 +2345,121 @@ function renderCrafting() {
     name.className = 'recipe-name';
     name.textContent = itemName(r.out.type) + ' x' + r.out.qty;
     head.appendChild(icon); head.appendChild(name);
+    if (r.station) {
+      const tag = document.createElement('span');
+      tag.className = 'recipe-station';
+      tag.textContent = r.station === 'table' ? '🛠 Meja' : '🔥 Tungku';
+      head.appendChild(tag);
+    }
     const ing = document.createElement('div');
     ing.className = 'recipe-ing';
-    ing.textContent = r.in.map(function (g) {
-      return itemName(g.type) + ' x' + g.qty + ' (' + countItem(g.type) + ')';
-    }).join(' + ');
+    r.in.forEach(function (g, gi) {
+      if (gi > 0) ing.appendChild(document.createTextNode(' + '));
+      const span = document.createElement('span');
+      const have = countItem(g.type);
+      span.className = have >= g.qty ? '' : 'lack';
+      span.textContent = itemName(g.type) + ' x' + g.qty + ' (' + have + ')';
+      ing.appendChild(span);
+    });
     const btn = document.createElement('button');
-    btn.textContent = ready ? 'Buat' : 'Bahan kurang';
+    if (locked) btn.textContent = r.station === 'table' ? 'Butuh Meja Kerajinan' : 'Butuh Tungku';
+    else if (!ready) btn.textContent = 'Bahan kurang';
+    else btn.textContent = 'Buat';
     btn.disabled = !ready;
     btn.onclick = function () { craftRecipe(index); };
     box.appendChild(head); box.appendChild(ing); box.appendChild(btn);
     list.appendChild(box);
   });
+  if (!shown) {
+    const p = document.createElement('p');
+    p.className = 'hint';
+    p.textContent = 'Belum ada resep di kategori ini.';
+    list.appendChild(p);
+  }
 }
 function toggleCraft() {
   const panel = document.getElementById('craft-panel');
   const inv = document.getElementById('inventory-panel');
   if (panel.classList.contains('active')) {
     panel.classList.remove('active');
-    if (document.pointerLockElement !== canvas) requestLock();
+    document.body.classList.remove('panel-open');
+    if (!IS_TOUCH) requestLock();
   } else {
     inv.classList.remove('active');
     panel.classList.add('active');
+    document.body.classList.add('panel-open');
+    virtualLeft = virtualRight = virtualForward = virtualBack = false;
+    mouseBreak = false; mobileJump = false; mobileDown = false;
     renderCrafting();
-    if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
+    if (!IS_TOUCH && document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
   }
+}
+function setCraftFilter(cat) {
+  craftFilter = cat || 'all';
+  renderCrafting();
 }
 let screenShake = 0, shakeIntensity = 8;
 function shake(amount, intensity) { screenShake = amount; shakeIntensity = intensity; }
 
 /* 11. GAME FLOW & MAIN LOOP */
+const LS_MODE = 'arcade_mode';
+function addScore(n) {
+  if (player.creative) return;
+  const mult = (MODES[gameMode] && MODES[gameMode].scoreMult) || 1;
+  player.score += Math.round(n * mult);
+}
+function setPlayingUI(on) {
+  document.body.classList.toggle('playing', on);
+  document.getElementById('crosshair').style.display = on ? 'block' : 'none';
+  document.getElementById('pauseBtn').classList.toggle('active', on);
+  if (!on) {
+    document.getElementById('itemLabel').style.display = 'none';
+  } else {
+    document.getElementById('itemLabel').style.display = '';
+  }
+}
+function updateModeSelection() {
+  document.querySelectorAll('#modeSelect .mode-card').forEach(function (b) {
+    const on = b.dataset.mode === selectedMode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
+  const m = MODES[selectedMode] || MODES.survival;
+  const start = document.getElementById('btnStart');
+  if (start) start.textContent = 'Mulai — ' + m.name;
+}
+function chooseMode(mode) {
+  if (!MODES[mode]) mode = 'survival';
+  selectedMode = mode;
+  try { localStorage.setItem(LS_MODE, mode); } catch (e) {}
+  updateModeSelection();
+}
 function hideOverlays() {
   ['overlayMenu', 'overlayUsername', 'overlayPause', 'overlayGameOver', 'overlayLeaderboard', 'overlayLoading'].forEach(function (id) {
     document.getElementById(id).classList.remove('active');
   });
   document.getElementById('inventory-panel').classList.remove('active');
   document.getElementById('craft-panel').classList.remove('active');
+  document.body.classList.remove('panel-open');
 }
-function startGame() {
+function startGame(mode) {
+  if (mode) chooseMode(mode);
   const user = getLastUsername();
   if (!user) { showUsernameOverlay(); return; }
+  gameMode = selectedMode;
   hideOverlays();
+  document.body.classList.remove('playing', 'flying');
+  document.getElementById('pauseBtn').classList.remove('active');
   generateWorld();
   resetPlayer();
   player.name = user;
   timerSec = 0;
   gameState = STATE.LOADING;
   document.getElementById('overlayLoading').classList.add('active');
+  document.getElementById('pauseModeText').textContent = 'Mode: ' + MODES[gameMode].icon + ' ' + MODES[gameMode].name;
   updateLoading(0);
+  renderHotbar();
+  updateHUD();
   buildQueue = [];
   for (let cz = 0; cz < CHUNKS_Z; cz++) {
     for (let cx = 0; cx < CHUNKS_X; cx++) buildQueue.push([cx, cz]);
@@ -1660,14 +2496,27 @@ function finishLoading() {
   if (gameState !== STATE.LOADING) return;
   document.getElementById('overlayLoading').classList.remove('active');
   gameState = STATE.PLAYING;
-  document.getElementById('crosshair').style.display = 'block';
+  setPlayingUI(true);
   renderHotbar();
   updateHUD();
   sfxStart();
-  if (!document.body.classList.contains('touch')) requestLock();
+  if (gameMode === 'creative') {
+    showToast(IS_TOUCH ? 'Mode Kreatif: tekan tombol Terbang, lalu Lompat/Turun untuk naik-turun.' : 'Mode Kreatif: tekan V untuk terbang. Spasi naik, Shift turun.');
+  } else if (gameMode === 'challenge') {
+    showToast('Tantangan dimulai! Bertahan 3 menit dan kumpulkan skor 2x.');
+  }
+  if (!IS_TOUCH) {
+    requestLock();
+    setTimeout(function () {
+      if (gameState === STATE.PLAYING && document.pointerLockElement !== canvas) {
+        showToast('Klik kiri layar untuk mengunci mouse, lalu klik lagi untuk menambang.');
+      }
+    }, 650);
+  }
   ensureLoop();
 }
 function showUsernameOverlay() {
+  document.getElementById('overlayMenu').classList.remove('active');
   const el = document.getElementById('overlayUsername');
   el.classList.add('active');
   const input = document.getElementById('inputUsername');
@@ -1678,60 +2527,120 @@ function pauseGame() {
   if (gameState !== STATE.PLAYING) return;
   gameState = STATE.PAUSED;
   mouseBreak = false;
+  mobileJump = false;
+  mobileDown = false;
+  mobileSprint = false;
+  virtualLeft = virtualRight = virtualForward = virtualBack = false;
+  document.getElementById('runBtn').classList.remove('active');
+  document.getElementById('runBtn').textContent = '🏃 Lari';
+  setPlayingUI(false);
   document.getElementById('inventory-panel').classList.remove('active');
   document.getElementById('craft-panel').classList.remove('active');
+  document.body.classList.remove('panel-open');
+  document.getElementById('pauseModeText').textContent =
+    'Mode: ' + MODES[gameMode].icon + ' ' + MODES[gameMode].name +
+    (gameMode === 'challenge' ? ' · sisa ' + formatTime(Math.ceil(Math.max(0, MODES.challenge.timeLimit - timerSec))) : '');
   document.getElementById('overlayPause').classList.add('active');
-  if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
+  if (!IS_TOUCH && document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
 }
 function resumeGame() {
   if (gameState !== STATE.PAUSED) return;
   gameState = STATE.PLAYING;
   document.getElementById('overlayPause').classList.remove('active');
+  setPlayingUI(true);
   lastTime = performance.now();
   accumulator = 0;
-  if (!document.body.classList.contains('touch')) requestLock();
+  if (!IS_TOUCH) requestLock();
 }
 function returnToMenu() {
   gameState = STATE.MENU;
   mouseBreak = false;
+  mobileJump = false; mobileDown = false; mobileSprint = false;
   if (buildTimer) { clearTimeout(buildTimer); buildTimer = 0; }
   hideOverlays();
   document.getElementById('overlayMenu').classList.add('active');
-  document.getElementById('crosshair').style.display = 'none';
-  if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
+  setPlayingUI(false);
+  document.body.classList.remove('playing', 'creative', 'flying');
+  document.getElementById('pauseBtn').classList.remove('active');
+  if (!IS_TOUCH && document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
   cancelAnimationFrame(animFrame);
   loopRunning = false;
   lastTime = 0;
   accumulator = 0;
+  updateModeSelection();
 }
-function gameOver() {
+function endGame(won, reasonText) {
   if (player.dead) return;
   player.dead = true;
   gameState = STATE.GAMEOVER;
   mouseBreak = false;
-  addLeaderboardEntry(player.name || getLastUsername() || 'Pemain', player.score, timerSec);
-  if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
-  document.getElementById('goMessage').textContent = 'Skor Anda: ' + player.score + ' | Blok ditambang: ' + player.blocksMined;
+  mobileJump = false; mobileDown = false; mobileSprint = false;
+  virtualLeft = virtualRight = virtualForward = virtualBack = false;
+  document.body.classList.remove('flying', 'panel-open');
+  setPlayingUI(false);
+  document.getElementById('inventory-panel').classList.remove('active');
+  document.getElementById('craft-panel').classList.remove('active');
+  if (gameMode === 'challenge' && won) {
+    player.score += 500;
+  }
+  if (!player.creative) addLeaderboardEntry(player.name || getLastUsername() || 'Pemain', player.score, timerSec, gameMode);
+  if (!IS_TOUCH && document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
+  document.getElementById('goTitle').textContent = won ? 'Misi Selesai!' : 'Game Over';
+  document.getElementById('goMessage').textContent = reasonText + ' · Skor: ' + player.score + ' · Blok: ' + player.blocksMined;
   document.getElementById('overlayGameOver').classList.add('active');
-  document.getElementById('crosshair').style.display = 'none';
-  sfxGameOver();
+  if (won) sfxWin(); else sfxGameOver();
+}
+function gameOver() {
+  const timeText = 'Kamu bertahan ' + formatTime(timerSec);
+  endGame(false, timeText);
+}
+function victory() {
+  endGame(true, 'Kamu menyelesaikan Tantangan 3 Menit');
+}
+function toggleFly() {
+  if (gameState !== STATE.PLAYING) return;
+  if (gameMode !== 'creative') { showToast('Terbang hanya tersedia di mode Kreatif.'); return; }
+  player.flying = !player.flying;
+  player.vy = 0;
+  if (!player.flying) mobileDown = false;
+  document.body.classList.toggle('flying', player.flying);
+  document.getElementById('flyBtn').classList.toggle('active', player.flying);
+  document.getElementById('flyBtn').textContent = player.flying ? '✈ Mendarat' : '✈ Terbang';
+  updateHUD();
+  showToast(player.flying ? 'Terbang aktif: Spasi naik, Shift/tombol Turun untuk turun.' : 'Terbang nonaktif.');
 }
 function update(dt) {
   if (gameState !== STATE.PLAYING) return;
   timerSec += dt;
+  if (gameMode === 'challenge' && timerSec >= MODES.challenge.timeLimit) {
+    victory();
+    return;
+  }
   movePlayer(dt);
   updateFish(dt);
   if (player.swingT > 0) player.swingT = Math.max(0, player.swingT - dt);
-  player.hunger = Math.max(0, player.hunger - dt * 0.35);
-  if (player.hunger <= 0) player.health = Math.max(0, player.health - dt * 3);
-  else if (player.hunger > 75 && player.health < player.maxHealth) player.health = Math.min(player.maxHealth, player.health + dt * 1.5);
-  if (player.health <= 0) gameOver();
+  if (player.creative) {
+    player.health = player.maxHealth;
+    player.hunger = player.maxHunger;
+  } else {
+    const hungerRate = gameMode === 'challenge' ? 0.30 : 0.12;
+    player.hunger = Math.max(0, player.hunger - dt * hungerRate);
+    if (player.hunger <= 0) player.health = Math.max(0, player.health - dt * 3);
+    else if (player.hunger > 65 && player.health < player.maxHealth) player.health = Math.min(player.maxHealth, player.health + dt * 1.2);
+  }
+  if (player.health <= 0) { gameOver(); return; }
+  if (screenShake > 0) screenShake = Math.max(0, screenShake - dt * 26);
   if (mouseBreak) breakBlock();
 }
 let proj = new Float32Array(16), view = new Float32Array(16), vp = new Float32Array(16);
 function render() {
   resizeCanvas();
   const eye = [player.x, player.y + EYE_HEIGHT, player.z];
+  if (screenShake > 0) {
+    const k = screenShake * 0.004;
+    eye[0] += (Math.random() * 2 - 1) * k;
+    eye[1] += (Math.random() * 2 - 1) * k;
+  }
   const eyeBlock = getBlock(Math.floor(eye[0]), Math.floor(eye[1]), Math.floor(eye[2]));
   const underwater = eyeBlock === BLOCK.WATER;
   const fogCol = underwater ? [0.08, 0.3, 0.55] : SKY;
@@ -1769,11 +2678,33 @@ function render() {
     gl.drawArrays(gl.TRIANGLES, 0, mesh.count);
   }
 
-  let hasWater = false;
+  let hasWater = false, hasGlass = false;
   for (let i = 0; i < chunkMeshes.length; i++) {
-    if (chunkMeshes[i] && chunkMeshes[i].waterCount) { hasWater = true; break; }
+    if (chunkMeshes[i] && chunkMeshes[i].waterCount) hasWater = true;
+    if (chunkMeshes[i] && chunkMeshes[i].glassCount) hasGlass = true;
   }
   drawFish(vp);
+  if (hasGlass) {
+    gl.useProgram(worldProgram);
+    gl.enableVertexAttribArray(worldAttribs.aPos);
+    gl.enableVertexAttribArray(worldAttribs.aUV);
+    gl.enableVertexAttribArray(worldAttribs.aLight);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.depthMask(false);
+    gl.uniform1f(worldUniforms.uAlpha, 1);
+    for (let i = 0; i < chunkMeshes.length; i++) {
+      const mesh = chunkMeshes[i];
+      if (!mesh || !mesh.glassCount) continue;
+      gl.bindBuffer(gl.ARRAY_BUFFER, mesh.glassBuffer);
+      gl.vertexAttribPointer(worldAttribs.aPos, 3, gl.FLOAT, false, 24, 0);
+      gl.vertexAttribPointer(worldAttribs.aUV, 2, gl.FLOAT, false, 24, 12);
+      gl.vertexAttribPointer(worldAttribs.aLight, 1, gl.FLOAT, false, 24, 20);
+      gl.drawArrays(gl.TRIANGLES, 0, mesh.glassCount);
+    }
+    gl.depthMask(true);
+    gl.disable(gl.BLEND);
+  }
   if (hasWater) {
     gl.useProgram(worldProgram);
     gl.enableVertexAttribArray(worldAttribs.aPos);
@@ -1853,7 +2784,10 @@ function loop(now) {
 }
 
 /* 12. EVENT WIRING */
-document.getElementById('btnStart').addEventListener('click', startGame);
+document.querySelectorAll('#modeSelect .mode-card').forEach(function (btn) {
+  btn.addEventListener('click', function () { chooseMode(btn.dataset.mode); });
+});
+document.getElementById('btnStart').addEventListener('click', function () { startGame(); });
 document.getElementById('btnChangeName').addEventListener('click', showUsernameOverlay);
 document.getElementById('btnLeaderboard').addEventListener('click', function () {
   renderLeaderboard();
@@ -1871,18 +2805,30 @@ document.getElementById('btnSetUsername').addEventListener('click', function () 
   err.style.display = 'none';
   startGame();
 });
+document.getElementById('inputUsername').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') document.getElementById('btnSetUsername').click();
+});
+document.getElementById('btnUsernameBack').addEventListener('click', function () {
+  document.getElementById('overlayUsername').classList.remove('active');
+  if (gameState === STATE.MENU || gameState === STATE.LEADERBOARD) {
+    document.getElementById('overlayMenu').classList.add('active');
+    gameState = STATE.MENU;
+  }
+});
 document.getElementById('btnResume').addEventListener('click', resumeGame);
 document.getElementById('btnMenu').addEventListener('click', returnToMenu);
 document.getElementById('btnGoMenu').addEventListener('click', returnToMenu);
-document.getElementById('btnRestart').addEventListener('click', startGame);
+document.getElementById('btnRestart').addEventListener('click', function () { startGame(); });
 document.getElementById('btnLbMenu').addEventListener('click', returnToMenu);
+document.getElementById('pauseBtn').addEventListener('click', pauseGame);
 document.getElementById('invBtn').addEventListener('click', function () {
   if (gameState !== STATE.PLAYING) return;
   toggleInventory();
 });
 document.getElementById('invClose').addEventListener('click', function () {
   document.getElementById('inventory-panel').classList.remove('active');
-  if (gameState === STATE.PLAYING && !document.body.classList.contains('touch')) requestLock();
+  document.body.classList.remove('panel-open');
+  if (gameState === STATE.PLAYING && !IS_TOUCH) requestLock();
 });
 document.getElementById('craftBtn').addEventListener('click', function () {
   if (gameState !== STATE.PLAYING) return;
@@ -1890,7 +2836,18 @@ document.getElementById('craftBtn').addEventListener('click', function () {
 });
 document.getElementById('craftClose').addEventListener('click', function () {
   document.getElementById('craft-panel').classList.remove('active');
-  if (gameState === STATE.PLAYING && !document.body.classList.contains('touch')) requestLock();
+  document.body.classList.remove('panel-open');
+  if (gameState === STATE.PLAYING && !IS_TOUCH) requestLock();
+});
+document.querySelectorAll('#craft-cats .cat-btn').forEach(function (btn) {
+  btn.addEventListener('click', function () { setCraftFilter(btn.dataset.cat); });
+});
+document.querySelectorAll('#lb-filter button').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    lbFilter = btn.dataset.lb;
+    document.querySelectorAll('#lb-filter button').forEach(function (b) { b.classList.toggle('active', b === btn); });
+    renderLeaderboard();
+  });
 });
 
 /* Kontrol mobile: D-pad + tombol aksi */
@@ -1915,23 +2872,57 @@ document.querySelectorAll('.dp-btn').forEach(function (btn) {
   btn.addEventListener('mouseup', function (e) { e.preventDefault(); end(); });
   btn.addEventListener('mouseleave', end);
 });
+
+function bindHoldButton(btn, onDown, onUp) {
+  btn.addEventListener('touchstart', function (e) { e.preventDefault(); onDown(); }, { passive: false });
+  btn.addEventListener('touchend', function (e) { e.preventDefault(); onUp(); });
+  btn.addEventListener('touchcancel', onUp);
+  btn.addEventListener('mousedown', function (e) { e.preventDefault(); onDown(); });
+  btn.addEventListener('mouseup', function (e) { e.preventDefault(); onUp(); });
+  btn.addEventListener('mouseleave', onUp);
+}
 document.querySelectorAll('.act-btn').forEach(function (btn) {
   const act = btn.dataset.act;
-  const run = function () {
-    if (gameState !== STATE.PLAYING) return;
-    if (act === 'mine') breakBlock();
-    else if (act === 'place') placeBlock();
-    else if (act === 'jump') {
-      if (player.onGround) { player.vy = JUMP_V; player.onGround = false; sfxJump(); }
-    }
-  };
-  btn.addEventListener('touchstart', function (e) { e.preventDefault(); run(); }, { passive: false });
-  btn.addEventListener('mousedown', function (e) { e.preventDefault(); run(); });
+  if (act === 'mine') {
+    bindHoldButton(btn, function () {
+      if (gameState !== STATE.PLAYING) return;
+      mouseBreak = true;
+      breakBlock();
+    }, function () { mouseBreak = false; });
+  } else if (act === 'place') {
+    bindHoldButton(btn, function () {
+      if (gameState === STATE.PLAYING) placeBlock();
+    }, function () {});
+  } else if (act === 'jump') {
+    bindHoldButton(btn, function () {
+      if (gameState !== STATE.PLAYING) return;
+      mobileJump = true;
+      if (player.onGround && !player.flying) { player.vy = JUMP_V; player.onGround = false; sfxJump(); }
+    }, function () { mobileJump = false; });
+  } else if (act === 'use') {
+    bindHoldButton(btn, function () { useSelected(); }, function () {});
+  }
 });
 
+document.getElementById('runBtn').addEventListener('click', function () {
+  mobileSprint = !mobileSprint;
+  this.classList.toggle('active', mobileSprint);
+  this.textContent = mobileSprint ? '🏃 Lari ON' : '🏃 Lari';
+});
+document.getElementById('flyBtn').addEventListener('click', toggleFly);
+bindHoldButton(document.getElementById('downBtn'), function () {
+  mobileDown = true;
+}, function () { mobileDown = false; });
+
 /* Bootstrap */
+try {
+  const savedMode = localStorage.getItem(LS_MODE);
+  if (savedMode && MODES[savedMode]) selectedMode = savedMode;
+} catch (e) {}
+updateModeSelection();
 resizeCanvas();
 resetPlayer();
+document.body.classList.remove('creative');
 renderHotbar();
 updateHUD();
 renderLeaderboard();
