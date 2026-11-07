@@ -29,6 +29,8 @@
   button.secondary { background: #4a4a6a; }
   button.secondary:hover { background: #6a6a8a; }
   .hint { margin-top: 14px; font-size: 13px; color: #aaa; line-height: 1.5; }
+  .load-bar { width: 100%; height: 18px; background: rgba(0,0,0,0.5); border: 2px solid #000; border-radius: 9px; overflow: hidden; }
+  #loadFill { height: 100%; width: 0%; background: linear-gradient(90deg, #4cc9f0, #4361ee); transition: width 0.1s; }
   #hud { position: absolute; top: 10px; left: 10px; z-index: 20; display: flex; flex-direction: column; gap: 6px; width: min(300px, 55vw); pointer-events: none; }
   .bar-row { display: flex; align-items: center; gap: 8px; }
   .stat-label { font-size: 12px; color: #fff; text-shadow: 1px 1px 2px #000; white-space: nowrap; }
@@ -41,6 +43,17 @@
   .slot.active { border-color: #e94560; box-shadow: 0 0 10px rgba(233,69,96,0.9); }
   .slot-count { position: absolute; right: 3px; bottom: 1px; font-size: 11px; color: #fff; text-shadow: 1px 1px #000; }
   .inv-btn { position: absolute; right: 14px; bottom: 74px; width: auto; margin: 0; padding: 10px 14px; font-size: 13px; z-index: 22; }
+  .craft-btn { bottom: 122px; }
+  #craft-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; width: 420px; max-width: 94vw; max-height: 85vh; overflow-y: auto; padding: 22px; background: rgba(30,30,50,0.98); border: 3px solid #4cc9f0; border-radius: 14px; color: #fff; z-index: 70; }
+  #craft-panel.active { display: block; }
+  #craft-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+  .recipe { background: rgba(0,0,0,0.45); border: 2px solid #444; border-radius: 10px; padding: 10px; text-align: left; }
+  .recipe.ready { border-color: #4cc9f0; }
+  .recipe-head { display: flex; align-items: center; gap: 8px; font-weight: bold; }
+  .recipe-icon { font-size: 22px; }
+  .recipe-ing { font-size: 12px; color: #aaa; margin: 6px 0 8px; }
+  .recipe button { width: 100%; margin: 0; padding: 8px; font-size: 14px; }
+  .recipe button:disabled { background: #3a3a4a; color: #888; cursor: not-allowed; }
   #toast { position: absolute; top: 22%; left: 50%; transform: translateX(-50%); padding: 10px 18px; background: rgba(0,0,0,0.85); border: 2px solid #e94560; border-radius: 8px; color: #fff; font-size: 14px; opacity: 0; pointer-events: none; transition: opacity 0.25s; z-index: 60; }
   #toast.show { opacity: 1; }
   #inventory-panel { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); display: none; width: 340px; max-width: 92vw; padding: 22px; background: rgba(30,30,50,0.97); border: 3px solid #e94560; border-radius: 14px; color: #fff; z-index: 70; }
@@ -62,6 +75,7 @@
   body.touch #mobile-controls { display: flex; }
   body.touch #hotbar { bottom: 104px; }
   body.touch .inv-btn { bottom: 158px; }
+  body.touch .craft-btn { bottom: 206px; }
   body.touch #crosshair { display: block; }
 </style>
 </head>
@@ -91,6 +105,7 @@
 
   <div id="hotbar"></div>
   <button id="invBtn" class="inv-btn">Inventori (E)</button>
+  <button id="craftBtn" class="inv-btn craft-btn">Kerajinan (C)</button>
 
   <div id="mobile-controls">
     <div class="d-pad">
@@ -137,6 +152,14 @@
     </div>
   </div>
 
+  <div id="overlayLoading" class="overlay">
+    <div class="card">
+      <h1>Membuat Dunia</h1>
+      <div class="load-bar"><div id="loadFill"></div></div>
+      <p id="loadText" style="color:#aaa;margin:10px 0 0;">0%</p>
+    </div>
+  </div>
+
   <div id="overlayGameOver" class="overlay">
     <div class="card">
       <h1 id="goTitle">Game Over</h1>
@@ -162,6 +185,12 @@
     <div id="inv-grid"></div>
     <button id="invClose" class="inv-close">Tutup (E)</button>
   </div>
+
+  <div id="craft-panel">
+    <h2 style="margin-top:0;">Kerajinan</h2>
+    <div id="craft-list"></div>
+    <button id="craftClose" class="inv-close">Tutup (C)</button>
+  </div>
 </div>
 <script>
 /* 1. CONFIG, CANVAS & WEBGL SETUP */
@@ -174,7 +203,7 @@ if (!gl) {
   throw new Error('WebGL unsupported');
 }
 
-const WORLD_X = 96, WORLD_Y = 48, WORLD_Z = 96;
+const WORLD_X = 192, WORLD_Y = 48, WORLD_Z = 192;
 const SEA_LEVEL = 15;
 const CHUNK = 16;
 const CHUNKS_X = WORLD_X / CHUNK, CHUNKS_Z = WORLD_Z / CHUNK;
@@ -183,9 +212,9 @@ const GRAVITY = 28, JUMP_V = 8.6, WALK_SPEED = 4.6, SPRINT_SPEED = 7.2;
 const EYE_HEIGHT = 1.62, P_WIDTH = 0.6, P_HEIGHT = 1.8;
 const FIXED_DT = 1 / 60;
 const SKY = [0.53, 0.75, 0.92];
-const FOG_NEAR = 34, FOG_FAR = 74;
+const FOG_NEAR = 40, FOG_FAR = 92;
 
-const STATE = { MENU:'MENU', USERNAME:'USERNAME', PLAYING:'PLAYING', PAUSED:'PAUSED', GAMEOVER:'GAMEOVER', LEADERBOARD:'LEADERBOARD' };
+const STATE = { MENU:'MENU', USERNAME:'USERNAME', LOADING:'LOADING', PLAYING:'PLAYING', PAUSED:'PAUSED', GAMEOVER:'GAMEOVER', LEADERBOARD:'LEADERBOARD' };
 let gameState = STATE.MENU;
 let lastTime = 0;
 let accumulator = 0;
@@ -193,7 +222,7 @@ let timerSec = 0;
 
 let viewW = 1, viewH = 1;
 function resizeCanvas() {
-  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   const w = Math.max(1, Math.floor(canvas.clientWidth * dpr));
   const h = Math.max(1, Math.floor(canvas.clientHeight * dpr));
   if (w !== canvas.width || h !== canvas.height) {
@@ -246,6 +275,7 @@ window.addEventListener('keydown', function (e) {
   if (/^Digit[1-9]$/.test(e.code) && gameState === STATE.PLAYING) selectSlot(parseInt(e.code.slice(5), 10) - 1);
   if (e.key === 'Escape' && gameState === STATE.PLAYING) pauseGame();
   if ((e.key === 'e' || e.key === 'E') && gameState === STATE.PLAYING) toggleInventory();
+  if ((e.key === 'c' || e.key === 'C') && gameState === STATE.PLAYING) toggleCraft();
 });
 window.addEventListener('keyup', function (e) {
   keys[e.code] = false;
@@ -261,8 +291,9 @@ function requestLock() {
 }
 document.addEventListener('pointerlockchange', function () {
   const locked = document.pointerLockElement === canvas;
-  const invOpen = document.getElementById('inventory-panel').classList.contains('active');
-  if (!locked && gameState === STATE.PLAYING && !invOpen) pauseGame();
+  const panelOpen = document.getElementById('inventory-panel').classList.contains('active') ||
+                    document.getElementById('craft-panel').classList.contains('active');
+  if (!locked && gameState === STATE.PLAYING && !panelOpen) pauseGame();
 });
 let dragging = false, dragX = 0, dragY = 0;
 document.addEventListener('mousemove', function (e) {
@@ -333,17 +364,36 @@ canvas.addEventListener('touchcancel', function () { lookTouch = null; });
 if (('ontouchstart' in window) || navigator.maxTouchPoints > 0) document.body.classList.add('touch');
 
 /* 4. WORLD DATA, BLOCK TYPES & GENERATION */
-const BLOCK = { AIR:0, GRASS:1, DIRT:2, STONE:3, WOOD:4, LEAVES:5, COAL_ORE:6, IRON_ORE:7, COBBLESTONE:8, PLANKS:9, SAND:10, WATER:11, BEDROCK:12 };
+const BLOCK = { AIR:0, GRASS:1, DIRT:2, STONE:3, WOOD:4, LEAVES:5, COAL_ORE:6, IRON_ORE:7, COBBLESTONE:8, PLANKS:9, SAND:10, WATER:11, BEDROCK:12, CLOUD:13 };
 const BLOCK_NAMES = {};
 BLOCK_NAMES[BLOCK.AIR] = 'Udara'; BLOCK_NAMES[BLOCK.GRASS] = 'Rumput'; BLOCK_NAMES[BLOCK.DIRT] = 'Tanah';
 BLOCK_NAMES[BLOCK.STONE] = 'Batu'; BLOCK_NAMES[BLOCK.WOOD] = 'Kayu'; BLOCK_NAMES[BLOCK.LEAVES] = 'Daun';
 BLOCK_NAMES[BLOCK.COAL_ORE] = 'Batu Arang'; BLOCK_NAMES[BLOCK.IRON_ORE] = 'Batu Besi';
-BLOCK_NAMES[BLOCK.COBBLESTONE] = 'Batu Bata'; BLOCK_NAMES[BLOCK.PLANKS] = 'Papan Kayu';
+BLOCK_NAMES[BLOCK.COBBLESTONE] = 'Batu Bulat'; BLOCK_NAMES[BLOCK.PLANKS] = 'Papan Kayu';
 BLOCK_NAMES[BLOCK.SAND] = 'Pasir'; BLOCK_NAMES[BLOCK.WATER] = 'Air'; BLOCK_NAMES[BLOCK.BEDROCK] = 'Bedrock';
+BLOCK_NAMES[BLOCK.CLOUD] = 'Awan';
+
+/* item non-blok (hasil crafting) */
+const ITEM = { STICK: 100, AXE: 101, PICKAXE: 102, SHOVEL: 103 };
+const ITEM_NAMES = {};
+ITEM_NAMES[ITEM.STICK] = 'Tongkat';
+ITEM_NAMES[ITEM.AXE] = 'Kapak Kayu';
+ITEM_NAMES[ITEM.PICKAXE] = 'Beliung Batu';
+ITEM_NAMES[ITEM.SHOVEL] = 'Sekop Batu';
+function isBlockItem(t) { return t > 0 && t < 100; }
+function isTool(t) { return t >= ITEM.AXE && t <= ITEM.SHOVEL; }
+function itemName(t) { return isBlockItem(t) ? (BLOCK_NAMES[t] || 'Barang') : (ITEM_NAMES[t] || 'Barang'); }
+function itemEmoji(t) {
+  if (t === ITEM.STICK) return '\uD83E\uDD62';
+  if (t === ITEM.AXE) return '\uD83E\uDE93';
+  if (t === ITEM.PICKAXE) return '\u26CF\uFE0F';
+  if (t === ITEM.SHOVEL) return '\uD83E\uDD44';
+  return blockEmoji(t);
+}
 
 /* tile atlas: 0 rumput atas, 1 rumput samping, 2 tanah, 3 batu, 4 kayu samping,
    5 kayu atas, 6 daun, 7 arang, 8 besi, 9 bata, 10 papan, 11 pasir, 12 bedrock,
-   13 kulit tangan, 14 air */
+   13 kulit tangan, 14 air, 15 awan */
 const BLOCK_TILES = {};
 BLOCK_TILES[BLOCK.GRASS]      = [1,1,0,2,1,1];
 BLOCK_TILES[BLOCK.DIRT]       = [2,2,2,2,2,2];
@@ -357,6 +407,7 @@ BLOCK_TILES[BLOCK.PLANKS]     = [10,10,10,10,10,10];
 BLOCK_TILES[BLOCK.SAND]       = [11,11,11,11,11,11];
 BLOCK_TILES[BLOCK.WATER]      = [14,14,14,14,14,14];
 BLOCK_TILES[BLOCK.BEDROCK]    = [12,12,12,12,12,12];
+BLOCK_TILES[BLOCK.CLOUD]      = [15,15,15,15,15,15];
 
 const BLOCK_DROP = {};
 BLOCK_DROP[BLOCK.GRASS] = BLOCK.DIRT; BLOCK_DROP[BLOCK.DIRT] = BLOCK.DIRT;
@@ -364,7 +415,7 @@ BLOCK_DROP[BLOCK.STONE] = BLOCK.COBBLESTONE; BLOCK_DROP[BLOCK.WOOD] = BLOCK.WOOD
 BLOCK_DROP[BLOCK.LEAVES] = null; BLOCK_DROP[BLOCK.COAL_ORE] = BLOCK.COAL_ORE;
 BLOCK_DROP[BLOCK.IRON_ORE] = BLOCK.IRON_ORE; BLOCK_DROP[BLOCK.COBBLESTONE] = BLOCK.COBBLESTONE;
 BLOCK_DROP[BLOCK.PLANKS] = BLOCK.PLANKS; BLOCK_DROP[BLOCK.SAND] = BLOCK.SAND;
-BLOCK_DROP[BLOCK.WATER] = null; BLOCK_DROP[BLOCK.BEDROCK] = null;
+BLOCK_DROP[BLOCK.WATER] = null; BLOCK_DROP[BLOCK.CLOUD] = null; BLOCK_DROP[BLOCK.BEDROCK] = null;
 
 const blocks = new Uint8Array(WORLD_X * WORLD_Y * WORLD_Z);
 function blockIndex(x, y, z) { return (y * WORLD_Z + z) * WORLD_X + x; }
@@ -375,11 +426,11 @@ function getBlock(x, y, z) {
 }
 function isSolid(x, y, z) {
   const b = getBlock(x, y, z);
-  return b !== BLOCK.AIR && b !== BLOCK.WATER;
+  return b !== BLOCK.AIR && b !== BLOCK.WATER && b !== BLOCK.CLOUD;
 }
 function isOpaque(x, y, z) {
   const b = getBlock(x, y, z);
-  return b !== BLOCK.AIR && b !== BLOCK.WATER;
+  return b !== BLOCK.AIR && b !== BLOCK.WATER && b !== BLOCK.CLOUD;
 }
 function isWater(x, y, z) { return getBlock(x, y, z) === BLOCK.WATER; }
 
@@ -428,7 +479,7 @@ function generateWorld() {
       for (let y = h; y < SEA_LEVEL; y++) blocks[blockIndex(x, y, z)] = BLOCK.WATER;
     }
   }
-  for (let i = 0; i < 150; i++) {
+  for (let i = 0; i < 600; i++) {
     const tx = 2 + Math.floor(Math.random() * (WORLD_X - 4));
     const tz = 2 + Math.floor(Math.random() * (WORLD_Z - 4));
     const h = heights[tz * WORLD_X + tx];
@@ -451,10 +502,43 @@ function generateWorld() {
       }
     }
   }
+  for (let i = 0; i < 64; i++) {
+    const cx = Math.floor(Math.random() * (WORLD_X - 14));
+    const cz = Math.floor(Math.random() * (WORLD_Z - 12));
+    const cw = 6 + Math.floor(Math.random() * 12);
+    const cd = 5 + Math.floor(Math.random() * 9);
+    const cy = 38 + Math.floor(Math.random() * 3);
+    for (let dx = 0; dx < cw; dx++) {
+      for (let dz = 0; dz < cd; dz++) {
+        if (Math.random() < 0.2) continue;
+        const x = cx + dx, z = cz + dz;
+        if (!inBounds(x, cy, z)) continue;
+        blocks[blockIndex(x, cy, z)] = BLOCK.CLOUD;
+        if (Math.random() < 0.45 && inBounds(x, cy + 1, z)) blocks[blockIndex(x, cy + 1, z)] = BLOCK.CLOUD;
+      }
+    }
+  }
+  fishList.length = 0;
+  for (let i = 0; i < 300 && fishList.length < 45; i++) {
+    const fx = Math.floor(Math.random() * WORLD_X);
+    const fz = Math.floor(Math.random() * WORLD_Z);
+    let wt = -1;
+    for (let y = SEA_LEVEL; y >= 1; y--) { if (getBlock(fx, y, fz) === BLOCK.WATER) { wt = y; break; } }
+    if (wt < 1 || getBlock(fx, wt - 1, fz) !== BLOCK.WATER) continue;
+    fishList.push({
+      hx: fx + 0.5, hy: wt + 0.35, hz: fz + 0.5,
+      x: fx + 0.5, y: wt + 0.35, z: fz + 0.5, angle: 0,
+      t: Math.random() * Math.PI * 2, phase: Math.random() * Math.PI * 2,
+      radius: 0.7 + Math.random() * 1.4,
+      speed: 0.6 + Math.random() * 0.9,
+      scale: 0.45 + Math.random() * 0.4,
+      color: [[1, 0.62, 0.25], [1, 0.85, 0.3], [0.4, 0.85, 1], [1, 0.45, 0.55]][Math.floor(Math.random() * 4)]
+    });
+  }
 }
 
 /* 5. TEXTURE ATLAS (prosedural, tanpa file eksternal) */
-const ATLAS_TILES = 4, TILE_PX = 16, ATLAS_PX = ATLAS_TILES * TILE_PX;
+const ATLAS_TILES = 4, TILE_PX = 32, ATLAS_PX = ATLAS_TILES * TILE_PX;
 function buildAtlasCanvas() {
   const c = document.createElement('canvas');
   c.width = ATLAS_PX; c.height = ATLAS_PX;
@@ -475,20 +559,21 @@ function buildAtlasCanvas() {
     }
   }
   paint(0, [79, 158, 58], 26);
-  paint(1, [122, 81, 54], 22, function (px, py) { return py < 5 ? [74 + Math.random() * 22, 142 + Math.random() * 26, 48 + Math.random() * 18] : null; });
+  paint(1, [122, 81, 54], 22, function (px, py) { return py < 10 ? [74 + Math.random() * 22, 142 + Math.random() * 26, 48 + Math.random() * 18] : null; });
   paint(2, [122, 81, 54], 24);
   paint(3, [138, 138, 138], 26);
-  paint(4, [107, 78, 49], 18, function (px) { return px % 4 === 0 ? [86, 60, 36] : null; });
+  paint(4, [107, 78, 49], 18, function (px) { return px % 8 === 0 ? [86, 60, 36] : null; });
   paint(5, [168, 137, 90], 16);
   paint(6, [61, 122, 46], 34);
-  paint(7, [120, 120, 120], 24, function (px, py) { return (px * 7 + py * 13) % 17 < 4 ? [30, 30, 30] : null; });
-  paint(8, [146, 132, 116], 22, function (px, py) { return (px * 5 + py * 11) % 19 < 4 ? [214, 184, 140] : null; });
+  paint(7, [120, 120, 120], 24, function (px, py) { return (px * 7 + py * 13) % 29 < 7 ? [30, 30, 30] : null; });
+  paint(8, [146, 132, 116], 22, function (px, py) { return (px * 5 + py * 11) % 31 < 7 ? [214, 184, 140] : null; });
   paint(9, [122, 122, 122], 40);
-  paint(10, [176, 138, 85], 14, function (px, py) { return py % 5 === 0 ? [128, 96, 54] : null; });
+  paint(10, [176, 138, 85], 14, function (px, py) { return py % 10 === 0 ? [128, 96, 54] : null; });
   paint(11, [224, 210, 154], 18);
   paint(12, [51, 51, 51], 18);
   paint(13, [224, 170, 130], 14);
-  paint(14, [52, 110, 190], 20, function (px, py) { return py % 5 === 0 ? [80, 145, 220] : null; });
+  paint(14, [52, 110, 190], 20, function (px, py) { return py % 8 === 0 ? [80, 145, 220] : null; });
+  paint(15, [246, 249, 252], 10);
   return c;
 }
 
@@ -557,6 +642,79 @@ const lineUniforms = {
 };
 const lineAttrib = gl.getAttribLocation(lineProgram, 'aPos');
 
+/* matahari + ikan: program tambahan */
+const skyProgram = createProgram(
+  'attribute vec3 aPos; attribute vec2 aUV; uniform mat4 uVP; varying vec2 vUV;\n' +
+  'void main(){ gl_Position = uVP * vec4(aPos, 1.0); vUV = aUV; }',
+  'precision mediump float; uniform sampler2D uTex; varying vec2 vUV;\n' +
+  'void main(){ vec4 c = texture2D(uTex, vUV); if (c.a < 0.02) discard; gl_FragColor = c; }'
+);
+const skyUniforms = {
+  uVP: gl.getUniformLocation(skyProgram, 'uVP'),
+  uTex: gl.getUniformLocation(skyProgram, 'uTex')
+};
+const skyAttribs = {
+  aPos: gl.getAttribLocation(skyProgram, 'aPos'),
+  aUV: gl.getAttribLocation(skyProgram, 'aUV')
+};
+const fishProgram = createProgram(
+  'attribute vec3 aPos; uniform mat4 uVP; uniform mat4 uModel;\n' +
+  'void main(){ gl_Position = uVP * (uModel * vec4(aPos, 1.0)); }',
+  'precision mediump float; uniform vec3 uColor; void main(){ gl_FragColor = vec4(uColor, 1.0); }'
+);
+const fishUniforms = {
+  uVP: gl.getUniformLocation(fishProgram, 'uVP'),
+  uModel: gl.getUniformLocation(fishProgram, 'uModel'),
+  uColor: gl.getUniformLocation(fishProgram, 'uColor')
+};
+const fishAttrib = gl.getAttribLocation(fishProgram, 'aPos');
+
+const sunTexture = (function () {
+  const c = document.createElement('canvas');
+  c.width = c.height = 64;
+  const g = c.getContext('2d');
+  const grd = g.createRadialGradient(32, 32, 4, 32, 32, 32);
+  grd.addColorStop(0, 'rgba(255,255,244,1)');
+  grd.addColorStop(0.45, 'rgba(255,240,150,1)');
+  grd.addColorStop(0.75, 'rgba(255,205,90,0.5)');
+  grd.addColorStop(1, 'rgba(255,190,60,0)');
+  g.fillStyle = grd;
+  g.fillRect(0, 0, 64, 64);
+  return c;
+})();
+const sunTex = gl.createTexture();
+gl.bindTexture(gl.TEXTURE_2D, sunTex);
+gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, sunTexture);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+const sunDir = (function () {
+  const v = [0.42, 0.68, -0.6];
+  const l = Math.hypot(v[0], v[1], v[2]) || 1;
+  return [v[0] / l, v[1] / l, v[2] / l];
+})();
+const sunBuffer = gl.createBuffer();
+const sunVerts = new Float32Array(6 * 5);
+
+const fishBuffer = gl.createBuffer();
+const FISH_MESH = new Float32Array([
+  0,0,0.45,  0,0.18,0,  0.16,0,0,
+  0,0,0.45,  0.16,0,0,  0,-0.18,0,
+  0,0,0.45,  0,-0.18,0,  -0.16,0,0,
+  0,0,0.45,  -0.16,0,0,  0,0.18,0,
+  0,0,-0.45,  0.16,0,0,  0,0.18,0,
+  0,0,-0.45,  0,-0.18,0,  0.16,0,0,
+  0,0,-0.45,  -0.16,0,0,  0,-0.18,0,
+  0,0,-0.45,  0,0.18,0,  -0.16,0,0,
+  0,0,-0.45,  0.16,0.2,-0.62,  0,0,-0.58,
+  0,0,-0.45,  0,0,-0.58,  -0.16,0.2,-0.62
+]);
+gl.bindBuffer(gl.ARRAY_BUFFER, fishBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, FISH_MESH, gl.STATIC_DRAW);
+const fishList = [];
+
 function mat4Perspective(out, fovy, aspect, near, far) {
   const f = 1 / Math.tan(fovy / 2);
   out[0] = f / aspect; out[1] = 0; out[2] = 0; out[3] = 0;
@@ -612,6 +770,10 @@ function mat4RotZ(out, a) {
   mat4Identity(out);
   out[0] = c; out[1] = s; out[4] = -s; out[5] = c;
 }
+function mat4Scale(out, x, y, z) {
+  mat4Identity(out);
+  out[0] = x; out[5] = y; out[10] = z;
+}
 
 /* 7. CHUNK MESHING */
 const FACE_DEFS = [
@@ -649,13 +811,15 @@ function buildChunk(cx, cz) {
         const id = blocks[blockIndex(x, y, z)];
         if (id === BLOCK.AIR) continue;
         const water = id === BLOCK.WATER;
+        const cloud = id === BLOCK.CLOUD;
+        const seeThrough = water || cloud;
         const tiles = BLOCK_TILES[id];
         for (let f = 0; f < 6; f++) {
           const face = FACE_DEFS[f];
           const nx = x + face.d[0], ny = y + face.d[1], nz = z + face.d[2];
           const nb = getBlock(nx, ny, nz);
-          if (water) { if (nb !== BLOCK.AIR) continue; }
-          else { if (nb !== BLOCK.AIR && nb !== BLOCK.WATER) continue; }
+          if (seeThrough) { if (nb !== BLOCK.AIR) continue; }
+          else { if (nb !== BLOCK.AIR && nb !== BLOCK.WATER && nb !== BLOCK.CLOUD) continue; }
           const tile = tiles[f];
           const col = tile % ATLAS_TILES, row = Math.floor(tile / ATLAS_TILES);
           const u0 = col / ATLAS_TILES + 0.0004, v0 = (ATLAS_TILES - 1 - row) / ATLAS_TILES + 0.0004;
@@ -665,6 +829,8 @@ function buildChunk(cx, cz) {
             let light;
             if (water) {
               light = face.shade * 0.95;
+            } else if (cloud) {
+              light = 1.0;
             } else {
               const s1 = 2 * (c[0] * face.t1[0] + c[1] * face.t1[1] + c[2] * face.t1[2]) - 1;
               const s2 = 2 * (c[0] * face.t2[0] + c[1] * face.t2[1] + c[2] * face.t2[2]) - 1;
@@ -743,20 +909,28 @@ function addBox(positions, uvs, lights, x0, y0, z0, sx, sy, sz, tiles, shadeScal
     }
   }
 }
-function buildHandMesh(blockType) {
+function buildHandMesh(itemType) {
   const positions = [], uvs = [], lights = [];
   addBox(positions, uvs, lights, -0.065, 0, -0.065, 0.13, 0.48, 0.13, 13, 0.95);
-  if (blockType !== BLOCK.AIR) {
-    addBox(positions, uvs, lights, -0.12, 0.46, -0.12, 0.24, 0.24, 0.24, BLOCK_TILES[blockType], 0.95);
+  if (isBlockItem(itemType)) {
+    addBox(positions, uvs, lights, -0.12, 0.46, -0.12, 0.24, 0.24, 0.24, BLOCK_TILES[itemType], 0.95);
+  } else if (itemType === ITEM.STICK) {
+    addBox(positions, uvs, lights, -0.03, 0.44, -0.03, 0.06, 0.42, 0.06, 4, 0.95);
+  } else if (isTool(itemType)) {
+    addBox(positions, uvs, lights, -0.03, 0.44, -0.03, 0.06, 0.44, 0.06, 4, 0.95);
+    const headTile = (itemType === ITEM.AXE) ? 10 : 3;
+    if (itemType === ITEM.AXE) addBox(positions, uvs, lights, -0.15, 0.76, -0.05, 0.22, 0.16, 0.1, headTile, 0.95);
+    else if (itemType === ITEM.PICKAXE) addBox(positions, uvs, lights, -0.19, 0.78, -0.04, 0.38, 0.08, 0.08, headTile, 0.95);
+    else addBox(positions, uvs, lights, -0.11, 0.76, -0.05, 0.22, 0.08, 0.12, headTile, 0.95);
   }
   const data = triangulate(positions, uvs, lights);
   gl.bindBuffer(gl.ARRAY_BUFFER, handBuffer);
   gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
   handCount = data.length / 6;
-  handKey = String(blockType);
+  handKey = String(itemType);
 }
 function drawHand(proj, fogCol) {
-  const bt = selectedType();
+  const bt = selectedItemType();
   if (handKey !== String(bt)) buildHandMesh(bt);
   const t = performance.now() / 1000;
   const moving = player.moving && (player.onGround || player.inWater);
@@ -792,6 +966,89 @@ function drawHand(proj, fogCol) {
   gl.drawArrays(gl.TRIANGLES, 0, handCount);
   gl.disableVertexAttribArray(worldAttribs.aUV);
   gl.disableVertexAttribArray(worldAttribs.aLight);
+}
+
+/* matahari & ikan */
+const fishMatT = new Float32Array(16), fishMatR = new Float32Array(16), fishMatS = new Float32Array(16);
+const fishMatA = new Float32Array(16), fishMatB = new Float32Array(16);
+function updateFish(dt) {
+  for (let i = 0; i < fishList.length; i++) {
+    const f = fishList[i];
+    f.t += dt * f.speed;
+    const a = f.t + f.phase;
+    f.x = f.hx + Math.cos(a) * f.radius;
+    f.z = f.hz + Math.sin(a) * f.radius;
+    f.y = f.hy + Math.sin(a * 1.6) * 0.08;
+    f.angle = -a;
+  }
+}
+function drawFish(vp) {
+  if (!fishList.length) return;
+  gl.useProgram(fishProgram);
+  gl.uniformMatrix4fv(fishUniforms.uVP, false, vp);
+  gl.bindBuffer(gl.ARRAY_BUFFER, fishBuffer);
+  gl.enableVertexAttribArray(fishAttrib);
+  gl.vertexAttribPointer(fishAttrib, 3, gl.FLOAT, false, 12, 0);
+  for (let i = 0; i < fishList.length; i++) {
+    const f = fishList[i];
+    mat4Translate(fishMatT, f.x, f.y, f.z);
+    mat4RotY(fishMatR, f.angle);
+    mat4Scale(fishMatS, f.scale, f.scale, f.scale);
+    mat4Multiply(fishMatA, fishMatR, fishMatS);
+    mat4Multiply(fishMatB, fishMatT, fishMatA);
+    gl.uniformMatrix4fv(fishUniforms.uModel, false, fishMatB);
+    gl.uniform3f(fishUniforms.uColor, f.color[0], f.color[1], f.color[2]);
+    gl.drawArrays(gl.TRIANGLES, 0, FISH_MESH.length / 3);
+  }
+  gl.disableVertexAttribArray(fishAttrib);
+}
+function drawSun(vp, eye, fwd) {
+  let rx = -fwd[2], ry = 0, rz = fwd[0];
+  const rl = Math.hypot(rx, ry, rz) || 1;
+  rx /= rl; ry /= rl; rz /= rl;
+  const ux = ry * fwd[2] - rz * fwd[1];
+  const uy = rz * fwd[0] - rx * fwd[2];
+  const uz = rx * fwd[1] - ry * fwd[0];
+  const cx = eye[0] + sunDir[0] * 90, cy = eye[1] + sunDir[1] * 90, cz = eye[2] + sunDir[2] * 90;
+  const s = 9;
+  const corners = [
+    [-rx * s - ux * s, -ry * s - uy * s, -rz * s - uz * s],
+    [ rx * s - ux * s,  ry * s - uy * s,  rz * s - uz * s],
+    [ rx * s + ux * s,  ry * s + uy * s,  rz * s + uz * s],
+    [-rx * s + ux * s, -ry * s + uy * s, -rz * s + uz * s]
+  ];
+  const uvs = [[0, 0], [1, 0], [1, 1], [0, 1]];
+  const order = [0, 1, 2, 0, 2, 3];
+  for (let k = 0; k < 6; k++) {
+    const ci = order[k];
+    const base = k * 5;
+    sunVerts[base] = cx + corners[ci][0];
+    sunVerts[base + 1] = cy + corners[ci][1];
+    sunVerts[base + 2] = cz + corners[ci][2];
+    sunVerts[base + 3] = uvs[ci][0];
+    sunVerts[base + 4] = uvs[ci][1];
+  }
+  gl.disable(gl.DEPTH_TEST);
+  gl.depthMask(false);
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+  gl.useProgram(skyProgram);
+  gl.uniformMatrix4fv(skyUniforms.uVP, false, vp);
+  gl.activeTexture(gl.TEXTURE0);
+  gl.bindTexture(gl.TEXTURE_2D, sunTex);
+  gl.uniform1i(skyUniforms.uTex, 0);
+  gl.bindBuffer(gl.ARRAY_BUFFER, sunBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, sunVerts, gl.DYNAMIC_DRAW);
+  gl.enableVertexAttribArray(skyAttribs.aPos);
+  gl.enableVertexAttribArray(skyAttribs.aUV);
+  gl.vertexAttribPointer(skyAttribs.aPos, 3, gl.FLOAT, false, 20, 0);
+  gl.vertexAttribPointer(skyAttribs.aUV, 2, gl.FLOAT, false, 20, 12);
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+  gl.disableVertexAttribArray(skyAttribs.aPos);
+  gl.disableVertexAttribArray(skyAttribs.aUV);
+  gl.disable(gl.BLEND);
+  gl.depthMask(true);
+  gl.enable(gl.DEPTH_TEST);
 }
 
 /* 8. PLAYER, PHYSICS & INTERACTION */
@@ -855,16 +1112,83 @@ function addItem(type, qty) {
 }
 function selectedType() {
   const s = player.inv[player.selected];
+  return s && isBlockItem(s.type) ? s.type : BLOCK.AIR;
+}
+function selectedItemType() {
+  const s = player.inv[player.selected];
   return s ? s.type : BLOCK.AIR;
+}
+function addTool(type, dur) {
+  for (let i = 0; i < INV_SIZE; i++) {
+    const s = player.inv[i];
+    if (s.type === BLOCK.AIR || s.qty <= 0) {
+      player.inv[i] = { type: type, qty: 1, dur: dur || 80 };
+      return true;
+    }
+  }
+  return false;
+}
+function countItem(type) {
+  let n = 0;
+  for (let i = 0; i < INV_SIZE; i++) if (player.inv[i].type === type && player.inv[i].qty > 0) n += player.inv[i].qty;
+  return n;
+}
+function removeItem(type, n) {
+  for (let i = 0; i < INV_SIZE && n > 0; i++) {
+    const s = player.inv[i];
+    if (s.type !== type || s.qty <= 0) continue;
+    const take = Math.min(s.qty, n);
+    s.qty -= take;
+    n -= take;
+    if (s.qty <= 0) { s.type = BLOCK.AIR; s.qty = 0; delete s.dur; }
+  }
+}
+function useToolDurability() {
+  const s = player.inv[player.selected];
+  if (!s || !isTool(s.type)) return;
+  s.dur = (s.dur === undefined ? 80 : s.dur) - 1;
+  if (s.dur <= 0) {
+    showToast(itemName(s.type) + ' rusak!');
+    s.type = BLOCK.AIR; s.qty = 0; delete s.dur;
+  }
+  renderHotbar();
 }
 function consumeSelected() {
   const s = player.inv[player.selected];
-  if (s && s.qty > 0) {
+  if (s && s.qty > 0 && isBlockItem(s.type)) {
     s.qty--;
     if (s.qty <= 0) { s.type = BLOCK.AIR; s.qty = 0; }
     return true;
   }
   return false;
+}
+
+const RECIPES = [
+  { out: { type: BLOCK.PLANKS, qty: 4 }, in: [{ type: BLOCK.WOOD, qty: 1 }] },
+  { out: { type: ITEM.STICK, qty: 2 }, in: [{ type: BLOCK.PLANKS, qty: 1 }] },
+  { out: { type: ITEM.AXE, qty: 1, dur: 90 }, in: [{ type: BLOCK.PLANKS, qty: 3 }, { type: ITEM.STICK, qty: 2 }] },
+  { out: { type: ITEM.PICKAXE, qty: 1, dur: 90 }, in: [{ type: BLOCK.COBBLESTONE, qty: 3 }, { type: ITEM.STICK, qty: 2 }] },
+  { out: { type: ITEM.SHOVEL, qty: 1, dur: 70 }, in: [{ type: BLOCK.COBBLESTONE, qty: 1 }, { type: ITEM.STICK, qty: 2 }] }
+];
+function canCraft(r) {
+  return r.in.every(function (g) { return countItem(g.type) >= g.qty; });
+}
+function craftRecipe(index) {
+  const r = RECIPES[index];
+  if (!r || !canCraft(r)) { showToast('Bahan kurang'); return; }
+  r.in.forEach(function (g) { removeItem(g.type, g.qty); });
+  let ok;
+  if (r.out.dur) ok = addTool(r.out.type, r.out.dur);
+  else ok = addItem(r.out.type, r.out.qty);
+  if (!ok) { showToast('Inventori penuh!'); }
+  else {
+    showToast('Berhasil membuat ' + itemName(r.out.type) + ' x' + r.out.qty);
+    sfxPlace();
+    player.score += 5;
+  }
+  renderHotbar();
+  renderCrafting();
+  renderInventory();
 }
 
 function playerCollides(x, y, z) {
@@ -1046,14 +1370,20 @@ function fellTree(sx, sy, sz) {
 function breakBlock() {
   if (gameState !== STATE.PLAYING) return;
   const now = Date.now();
-  if (now - player.lastMine < 220) return;
-  player.lastMine = now;
   const hit = raycast(REACH);
   if (!hit) return;
   if (hit.y <= 0) { showToast('Bedrock tidak bisa ditambang'); return; }
   const t = getBlock(hit.x, hit.y, hit.z);
   if (t === BLOCK.AIR) return;
+  const held = selectedItemType();
+  let cooldown = 220, toolUsed = false;
+  if (t === BLOCK.WOOD && held === ITEM.AXE) { cooldown = 90; toolUsed = true; }
+  else if ((t === BLOCK.STONE || t === BLOCK.COAL_ORE || t === BLOCK.IRON_ORE || t === BLOCK.COBBLESTONE) && held === ITEM.PICKAXE) { cooldown = 90; toolUsed = true; }
+  else if ((t === BLOCK.DIRT || t === BLOCK.GRASS || t === BLOCK.SAND) && held === ITEM.SHOVEL) { cooldown = 90; toolUsed = true; }
+  if (now - player.lastMine < cooldown) return;
+  player.lastMine = now;
   player.swingT = SWING_DUR;
+  if (toolUsed) useToolDurability();
   if (t === BLOCK.WOOD) {
     const n = fellTree(hit.x, hit.y, hit.z);
     if (n > 0) {
@@ -1087,7 +1417,7 @@ function placeBlock() {
   if (!inBounds(x, y, z)) return;
   if (getBlock(x, y, z) !== BLOCK.AIR) return;
   const st = selectedType();
-  if (st === BLOCK.AIR) { showToast('Pilih blok dulu'); return; }
+  if (st === BLOCK.AIR) { showToast(isTool(selectedItemType()) ? 'Pegang blok untuk menaruh' : 'Pilih blok dulu'); return; }
   if (blockTouchesPlayer(x, y, z)) { showToast('Tidak bisa menaruh di badan sendiri'); return; }
   if (!consumeSelected()) { showToast('Slot kosong'); return; }
   updateBlock(x, y, z, st);
@@ -1141,6 +1471,7 @@ function blockEmoji(type) {
   map[BLOCK.WOOD] = '\uD83E\uDEB5'; map[BLOCK.LEAVES] = '\uD83C\uDF43'; map[BLOCK.COAL_ORE] = '\u26AB';
   map[BLOCK.IRON_ORE] = '\uD83D\uDD29'; map[BLOCK.COBBLESTONE] = '\uD83E\uDDF1'; map[BLOCK.PLANKS] = '\uD83E\uDEB5';
   map[BLOCK.SAND] = '\uD83D\uDFE8'; map[BLOCK.WATER] = '\uD83D\uDCA7'; map[BLOCK.BEDROCK] = '\u2B1B';
+  map[BLOCK.CLOUD] = '\u2601\uFE0F';
   return map[type] || '\u2753';
 }
 function renderHotbar() {
@@ -1150,8 +1481,13 @@ function renderHotbar() {
     const it = player.inv[i] || { type: BLOCK.AIR, qty: 0 };
     const div = document.createElement('div');
     div.className = 'slot' + (i === player.selected ? ' active' : '');
-    div.textContent = blockEmoji(it.type);
-    if (it.qty > 1) {
+    div.textContent = itemEmoji(it.type);
+    if (isTool(it.type) && it.dur !== undefined) {
+      const span = document.createElement('span');
+      span.className = 'slot-count';
+      span.textContent = it.dur;
+      div.appendChild(span);
+    } else if (it.qty > 1) {
       const span = document.createElement('span');
       span.className = 'slot-count';
       span.textContent = it.qty;
@@ -1176,8 +1512,13 @@ function renderInventory() {
     const it = player.inv[i] || { type: BLOCK.AIR, qty: 0 };
     const div = document.createElement('div');
     div.className = 'inv-item' + (i === player.selected ? ' selected' : '');
-    div.textContent = blockEmoji(it.type);
-    if (it.qty > 1) {
+    div.textContent = itemEmoji(it.type);
+    if (isTool(it.type) && it.dur !== undefined) {
+      const span = document.createElement('span');
+      span.className = 'inv-qty';
+      span.textContent = it.dur;
+      div.appendChild(span);
+    } else if (it.qty > 1) {
       const span = document.createElement('span');
       span.className = 'inv-qty';
       span.textContent = 'x' + it.qty;
@@ -1207,12 +1548,57 @@ function showToast(msg) {
 }
 function toggleInventory() {
   const panel = document.getElementById('inventory-panel');
+  const craft = document.getElementById('craft-panel');
   if (panel.classList.contains('active')) {
     panel.classList.remove('active');
     if (document.pointerLockElement !== canvas) requestLock();
   } else {
+    craft.classList.remove('active');
     panel.classList.add('active');
     renderInventory();
+    if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
+  }
+}
+function renderCrafting() {
+  const list = document.getElementById('craft-list');
+  if (!list) return;
+  list.innerHTML = '';
+  RECIPES.forEach(function (r, index) {
+    const ready = canCraft(r);
+    const box = document.createElement('div');
+    box.className = 'recipe' + (ready ? ' ready' : '');
+    const head = document.createElement('div');
+    head.className = 'recipe-head';
+    const icon = document.createElement('span');
+    icon.className = 'recipe-icon';
+    icon.textContent = itemEmoji(r.out.type);
+    const name = document.createElement('span');
+    name.className = 'recipe-name';
+    name.textContent = itemName(r.out.type) + ' x' + r.out.qty;
+    head.appendChild(icon); head.appendChild(name);
+    const ing = document.createElement('div');
+    ing.className = 'recipe-ing';
+    ing.textContent = r.in.map(function (g) {
+      return itemName(g.type) + ' x' + g.qty + ' (' + countItem(g.type) + ')';
+    }).join(' + ');
+    const btn = document.createElement('button');
+    btn.textContent = ready ? 'Buat' : 'Bahan kurang';
+    btn.disabled = !ready;
+    btn.onclick = function () { craftRecipe(index); };
+    box.appendChild(head); box.appendChild(ing); box.appendChild(btn);
+    list.appendChild(box);
+  });
+}
+function toggleCraft() {
+  const panel = document.getElementById('craft-panel');
+  const inv = document.getElementById('inventory-panel');
+  if (panel.classList.contains('active')) {
+    panel.classList.remove('active');
+    if (document.pointerLockElement !== canvas) requestLock();
+  } else {
+    inv.classList.remove('active');
+    panel.classList.add('active');
+    renderCrafting();
     if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
   }
 }
@@ -1221,20 +1607,58 @@ function shake(amount, intensity) { screenShake = amount; shakeIntensity = inten
 
 /* 11. GAME FLOW & MAIN LOOP */
 function hideOverlays() {
-  ['overlayMenu', 'overlayUsername', 'overlayPause', 'overlayGameOver', 'overlayLeaderboard'].forEach(function (id) {
+  ['overlayMenu', 'overlayUsername', 'overlayPause', 'overlayGameOver', 'overlayLeaderboard', 'overlayLoading'].forEach(function (id) {
     document.getElementById(id).classList.remove('active');
   });
   document.getElementById('inventory-panel').classList.remove('active');
+  document.getElementById('craft-panel').classList.remove('active');
 }
 function startGame() {
   const user = getLastUsername();
   if (!user) { showUsernameOverlay(); return; }
   hideOverlays();
   generateWorld();
-  buildAllChunks();
   resetPlayer();
   player.name = user;
   timerSec = 0;
+  gameState = STATE.LOADING;
+  document.getElementById('overlayLoading').classList.add('active');
+  updateLoading(0);
+  buildQueue = [];
+  for (let cz = 0; cz < CHUNKS_Z; cz++) {
+    for (let cx = 0; cx < CHUNKS_X; cx++) buildQueue.push([cx, cz]);
+  }
+  buildTotal = buildQueue.length;
+  buildDone = 0;
+  if (buildTimer) clearTimeout(buildTimer);
+  buildStep();
+}
+let buildQueue = [], buildTotal = 0, buildDone = 0, buildTimer = 0;
+function updateLoading(progress) {
+  const pct = Math.max(0, Math.min(100, Math.round(progress * 100)));
+  document.getElementById('loadFill').style.width = pct + '%';
+  document.getElementById('loadText').textContent = pct + '%';
+}
+function buildStep() {
+  if (gameState !== STATE.LOADING) return;
+  const t0 = performance.now();
+  let guard = 0;
+  while (buildQueue.length && guard++ < 16 && performance.now() - t0 < 14) {
+    const c = buildQueue.shift();
+    buildChunk(c[0], c[1]);
+    buildDone++;
+  }
+  updateLoading(buildTotal ? buildDone / buildTotal : 1);
+  render();
+  if (buildQueue.length) {
+    buildTimer = setTimeout(buildStep, 0);
+  } else {
+    finishLoading();
+  }
+}
+function finishLoading() {
+  if (gameState !== STATE.LOADING) return;
+  document.getElementById('overlayLoading').classList.remove('active');
   gameState = STATE.PLAYING;
   document.getElementById('crosshair').style.display = 'block';
   renderHotbar();
@@ -1255,6 +1679,7 @@ function pauseGame() {
   gameState = STATE.PAUSED;
   mouseBreak = false;
   document.getElementById('inventory-panel').classList.remove('active');
+  document.getElementById('craft-panel').classList.remove('active');
   document.getElementById('overlayPause').classList.add('active');
   if (document.pointerLockElement === canvas && document.exitPointerLock) document.exitPointerLock();
 }
@@ -1269,6 +1694,7 @@ function resumeGame() {
 function returnToMenu() {
   gameState = STATE.MENU;
   mouseBreak = false;
+  if (buildTimer) { clearTimeout(buildTimer); buildTimer = 0; }
   hideOverlays();
   document.getElementById('overlayMenu').classList.add('active');
   document.getElementById('crosshair').style.display = 'none';
@@ -1294,6 +1720,7 @@ function update(dt) {
   if (gameState !== STATE.PLAYING) return;
   timerSec += dt;
   movePlayer(dt);
+  updateFish(dt);
   if (player.swingT > 0) player.swingT = Math.max(0, player.swingT - dt);
   player.hunger = Math.max(0, player.hunger - dt * 0.35);
   if (player.hunger <= 0) player.health = Math.max(0, player.health - dt * 3);
@@ -1312,11 +1739,12 @@ function render() {
   const fogFar = underwater ? 14 : FOG_FAR;
   gl.clearColor(fogCol[0], fogCol[1], fogCol[2], 1);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-  if (gameState !== STATE.PLAYING && gameState !== STATE.PAUSED) return;
+  if (gameState !== STATE.PLAYING && gameState !== STATE.PAUSED && gameState !== STATE.LOADING) return;
   const dir = cameraDir();
-  mat4Perspective(proj, 70 * Math.PI / 180, canvas.width / canvas.height, 0.1, 140);
+  mat4Perspective(proj, 70 * Math.PI / 180, canvas.width / canvas.height, 0.1, 170);
   mat4LookAt(view, eye, [eye[0] + dir[0], eye[1] + dir[1], eye[2] + dir[2]], [0, 1, 0]);
   mat4Multiply(vp, proj, view);
+  drawSun(vp, eye, dir);
 
   gl.useProgram(worldProgram);
   gl.uniformMatrix4fv(worldUniforms.uVP, false, vp);
@@ -1345,7 +1773,12 @@ function render() {
   for (let i = 0; i < chunkMeshes.length; i++) {
     if (chunkMeshes[i] && chunkMeshes[i].waterCount) { hasWater = true; break; }
   }
+  drawFish(vp);
   if (hasWater) {
+    gl.useProgram(worldProgram);
+    gl.enableVertexAttribArray(worldAttribs.aPos);
+    gl.enableVertexAttribArray(worldAttribs.aUV);
+    gl.enableVertexAttribArray(worldAttribs.aLight);
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
     gl.depthMask(false);
@@ -1449,6 +1882,14 @@ document.getElementById('invBtn').addEventListener('click', function () {
 });
 document.getElementById('invClose').addEventListener('click', function () {
   document.getElementById('inventory-panel').classList.remove('active');
+  if (gameState === STATE.PLAYING && !document.body.classList.contains('touch')) requestLock();
+});
+document.getElementById('craftBtn').addEventListener('click', function () {
+  if (gameState !== STATE.PLAYING) return;
+  toggleCraft();
+});
+document.getElementById('craftClose').addEventListener('click', function () {
+  document.getElementById('craft-panel').classList.remove('active');
   if (gameState === STATE.PLAYING && !document.body.classList.contains('touch')) requestLock();
 });
 
